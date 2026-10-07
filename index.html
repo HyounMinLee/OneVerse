@@ -123,15 +123,21 @@ h1{margin:3px 0 0;font-size:27px;font-weight:780;letter-spacing:-.035em;line-hei
   -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);color:var(--gacc);font-size:14px;font-weight:750;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .qmark{display:block;height:46px;margin-top:16px;font-family:var(--serif);font-size:92px;line-height:1;color:var(--gacc);opacity:.32}
-.verse{margin:4px 2px 0;font-family:var(--serif);font-size:22px;line-height:1.82;letter-spacing:-.025em;
+.verse{margin:4px 2px 0;font-family:var(--serif);font-size:var(--vfs,18px);line-height:1.82;letter-spacing:-.025em;
   white-space:pre-wrap;word-break:keep-all;overflow-wrap:anywhere}
 .ornament{display:flex;justify-content:center;margin:24px 0 6px;color:var(--gacc)}
 .ornament svg{width:128px;height:22px}
 .note{margin-top:14px;padding:14px 16px;border-radius:18px;background:var(--glass)}
 .note-label{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:750;color:var(--gacc);margin-bottom:6px}
 .note-label svg{width:13px;height:13px}
-.note p{margin:0;font-size:15px;line-height:1.65;white-space:pre-wrap;word-break:keep-all;overflow-wrap:anywhere}
-.card-foot{display:flex;justify-content:flex-end;gap:6px;margin-top:16px}
+.note p{margin:0;font-size:calc(var(--vfs,18px) * .8);line-height:1.65;white-space:pre-wrap;word-break:keep-all;overflow-wrap:anywhere}
+.card-foot{display:flex;align-items:center;justify-content:flex-end;gap:6px;margin-top:16px}
+.fs-ctl{display:inline-flex;align-items:center;height:36px;margin-right:auto;border-radius:999px;background:var(--glass)}
+.fs-ctl button{width:40px;height:36px;display:grid;place-items:center;font-family:var(--serif);font-weight:600;color:var(--text)}
+.fs-ctl button:disabled{opacity:.3;cursor:default}
+.fs-ctl .fs-down{font-size:12px}
+.fs-ctl .fs-up{font-size:17px}
+.fs-ctl i{width:1px;height:16px;background:currentColor;opacity:.15}
 .chip-btn{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 14px;border-radius:999px;font-size:13px;font-weight:700;background:var(--glass)}
 .chip-btn svg{width:15px;height:15px}
 
@@ -358,7 +364,9 @@ body[data-sheet="edit"] #editSheet,body[data-sheet="settings"] #settingsSheet{tr
   /* ================= 기본 상수 / 유틸 ================= */
   const DOW = ['일', '월', '화', '수', '목', '금', '토'];
   const VIEWS = ['day', 'week', 'month'];
-  const KEYS = { view: 'dailyVerse.view', config: 'dailyVerse.github', cache: 'dailyVerse.cache.v1' };
+  const KEYS = { view: 'dailyVerse.view', config: 'dailyVerse.github', cache: 'dailyVerse.cache.v1', font: 'dailyVerse.fontSize' };
+  const FONT_STEPS = [14, 15, 16, 17, 18, 20, 22, 24, 26];  // 말씀 본문 글자 크기(px)
+  const FONT_DEFAULT = 18;
   const LIMITS = { reference: 100, text: 2000, note: 2000 };
   const DAY_MS = 86400000;
   const STALE_MS = 60 * 1000;          // 이 시간이 지난 월 데이터는 다시 확인
@@ -419,6 +427,27 @@ body[data-sheet="edit"] #editSheet,body[data-sheet="settings"] #settingsSheet{tr
     set(k, v) { try { if (LS) LS.setItem(k, v); } catch (e) { console.warn('브라우저 저장 실패', e); } },
     del(k) { try { if (LS) LS.removeItem(k); } catch { /* 무시 */ } },
   };
+
+  /* ================= 말씀 글자 크기 ================= */
+  let fontIndex = (() => {
+    const i = FONT_STEPS.indexOf(Number(pref.get(KEYS.font)));
+    return i >= 0 ? i : FONT_STEPS.indexOf(FONT_DEFAULT);
+  })();
+
+  function applyFont() {
+    document.documentElement.style.setProperty('--vfs', `${FONT_STEPS[fontIndex]}px`);
+    document.querySelectorAll('.fs-down').forEach((b) => { b.disabled = fontIndex <= 0; });
+    document.querySelectorAll('.fs-up').forEach((b) => { b.disabled = fontIndex >= FONT_STEPS.length - 1; });
+  }
+
+  /** 다시 그리지 않고 CSS 변수만 바꿔서 스크롤 위치를 유지 */
+  function changeFont(dir) {
+    const next = Math.min(FONT_STEPS.length - 1, Math.max(0, fontIndex + dir));
+    if (next === fontIndex) return;
+    fontIndex = next;
+    pref.set(KEYS.font, String(FONT_STEPS[fontIndex]));
+    applyFont();
+  }
 
   function normalizeEntry(e) {
     if (!e || typeof e !== 'object' || !isValidKey(e.date)) return null;
@@ -780,6 +809,9 @@ body[data-sheet="edit"] #editSheet,body[data-sheet="settings"] #settingsSheet{tr
         <div class="ornament">${SPRIG}</div>
         ${e.note ? `<div class="note"><span class="note-label">${ICON.leaf}묵상</span><p>${esc(e.note)}</p></div>` : ''}
         <div class="card-foot">
+          <div class="fs-ctl" role="group" aria-label="글자 크기">
+            <button class="fs-down" data-fs="-1" aria-label="글자 작게"${fontIndex <= 0 ? ' disabled' : ''}>가</button><i></i><button class="fs-up" data-fs="1" aria-label="글자 크게"${fontIndex >= FONT_STEPS.length - 1 ? ' disabled' : ''}>가</button>
+          </div>
           <button class="chip-btn" data-copy="${k}">${ICON.copy}복사</button>
           <button class="chip-btn" data-edit="${k}">${ICON.edit}수정</button>
         </div>
@@ -1208,6 +1240,8 @@ body[data-sheet="edit"] #editSheet,body[data-sheet="settings"] #settingsSheet{tr
 
   el.stage.addEventListener('click', (e) => {
     if (performance.now() - state.lastSwipeAt < 350) return;
+    const fs = e.target.closest('[data-fs]');
+    if (fs) { changeFont(Number(fs.dataset.fs)); return; }
     const copy = e.target.closest('[data-copy]');
     if (copy) { copyVerse(copy.dataset.copy); return; }
     const edit = e.target.closest('[data-edit]');
@@ -1244,6 +1278,7 @@ body[data-sheet="edit"] #editSheet,body[data-sheet="settings"] #settingsSheet{tr
   });
 
   /* ================= 시작 ================= */
+  applyFont();
   store.hydrate();
   renderNow();
   load();
