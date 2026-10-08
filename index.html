@@ -803,8 +803,7 @@ body[data-sheet="edit"] #editSheet,body[data-sheet="settings"] #settingsSheet{tr
         <div class="vc-top">
           <span class="vc-day">DAY ${String(dayOfYear(d)).padStart(3, '0')}</span>
           ${e.reference ? `<span class="ref">${esc(e.reference)}</span>` : ''}
-        </div>
-        <span class="qmark" aria-hidden="true">“</span>
+        </div>        
         <blockquote class="verse">${esc(e.text)}</blockquote>
         <div class="ornament">${SPRIG}</div>
         ${e.note ? `<div class="note"><span class="note-label">${ICON.leaf}묵상</span><p>${esc(e.note)}</p></div>` : ''}
