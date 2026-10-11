@@ -1,0 +1,389 @@
+{
+  "month": "2026-10",
+  "salary": 0,
+  "columns": [
+    {
+      "id": "c1",
+      "name": "기업 1"
+    },
+    {
+      "id": "c2",
+      "name": "기업 2"
+    },
+    {
+      "id": "c3",
+      "name": "기타 1"
+    },
+    {
+      "id": "c4",
+      "name": "기타 2"
+    }
+  ],
+  "items": [
+    {
+      "id": "d01",
+      "name": "십일조",
+      "color": "yellow",
+      "type": "out",
+      "amounts": {
+        "c1": 0,
+        "c2": 0,
+        "c3": 0,
+        "c4": 0
+      },
+      "memo": ""
+    },
+    {
+      "id": "d02",
+      "name": "기타헌금",
+      "color": "yellow",
+      "type": "out",
+      "amounts": {
+        "c1": 0,
+        "c2": 0,
+        "c3": 0,
+        "c4": 0
+      },
+      "memo": ""
+    },
+    {
+      "id": "d03",
+      "name": "운전자보험",
+      "color": "peach",
+      "type": "out",
+      "amounts": {
+        "c1": 0,
+        "c2": 0,
+        "c3": 0,
+        "c4": 0
+      },
+      "memo": ""
+    },
+    {
+      "id": "d04",
+      "name": "사랑밭",
+      "color": "peach",
+      "type": "out",
+      "amounts": {
+        "c1": 0,
+        "c2": 0,
+        "c3": 0,
+        "c4": 0
+      },
+      "memo": ""
+    },
+    {
+      "id": "d05",
+      "name": "밀알",
+      "color": "peach",
+      "type": "out",
+      "amounts": {
+        "c1": 0,
+        "c2": 0,
+        "c3": 0,
+        "c4": 0
+      },
+      "memo": ""
+    },
+    {
+      "id": "d06",
+      "name": "원바디",
+      "color": "peach",
+      "type": "out",
+      "amounts": {
+        "c1": 0,
+        "c2": 0,
+        "c3": 0,
+        "c4": 0
+      },
+      "memo": ""
+    },
+    {
+      "id": "d07",
+      "name": "청약",
+      "color": "green",
+      "type": "out",
+      "amounts": {
+        "c1": 0,
+        "c2": 0,
+        "c3": 0,
+        "c4": 0
+      },
+      "memo": ""
+    },
+    {
+      "id": "d08",
+      "name": "종신보험",
+      "color": "green",
+      "type": "out",
+      "amounts": {
+        "c1": 0,
+        "c2": 0,
+        "c3": 0,
+        "c4": 0
+      },
+      "memo": ""
+    },
+    {
+      "id": "d09",
+      "name": "아동수당",
+      "color": "yellow",
+      "type": "out",
+      "amounts": {
+        "c1": 0,
+        "c2": 0,
+        "c3": 0,
+        "c4": 0
+      },
+      "memo": ""
+    },
+    {
+      "id": "d10",
+      "name": "이정.청약",
+      "color": "orange",
+      "type": "out",
+      "amounts": {
+        "c1": 0,
+        "c2": 0,
+        "c3": 0,
+        "c4": 0
+      },
+      "memo": ""
+    },
+    {
+      "id": "d11",
+      "name": "이정.적금",
+      "color": "orange",
+      "type": "out",
+      "amounts": {
+        "c1": 0,
+        "c2": 0,
+        "c3": 0,
+        "c4": 0
+      },
+      "memo": ""
+    },
+    {
+      "id": "d12",
+      "name": "이정.펀드",
+      "color": "orange",
+      "type": "out",
+      "amounts": {
+        "c1": 0,
+        "c2": 0,
+        "c3": 0,
+        "c4": 0
+      },
+      "memo": ""
+    },
+    {
+      "id": "d13",
+      "name": "이정.휴대폰",
+      "color": "orange",
+      "type": "out",
+      "amounts": {
+        "c1": 0,
+        "c2": 0,
+        "c3": 0,
+        "c4": 0
+      },
+      "memo": ""
+    },
+    {
+      "id": "d14",
+      "name": "이준.보험",
+      "color": "mint",
+      "type": "out",
+      "amounts": {
+        "c1": 0,
+        "c2": 0,
+        "c3": 0,
+        "c4": 0
+      },
+      "memo": ""
+    },
+    {
+      "id": "d15",
+      "name": "이준.적금",
+      "color": "mint",
+      "type": "out",
+      "amounts": {
+        "c1": 0,
+        "c2": 0,
+        "c3": 0,
+        "c4": 0
+      },
+      "memo": ""
+    },
+    {
+      "id": "d16",
+      "name": "이준.청약",
+      "color": "mint",
+      "type": "out",
+      "amounts": {
+        "c1": 0,
+        "c2": 0,
+        "c3": 0,
+        "c4": 0
+      },
+      "memo": ""
+    },
+    {
+      "id": "d17",
+      "name": "이준.펀드",
+      "color": "mint",
+      "type": "out",
+      "amounts": {
+        "c1": 0,
+        "c2": 0,
+        "c3": 0,
+        "c4": 0
+      },
+      "memo": ""
+    },
+    {
+      "id": "d18",
+      "name": "어머니",
+      "color": "purple",
+      "type": "out",
+      "amounts": {
+        "c1": 0,
+        "c2": 0,
+        "c3": 0,
+        "c4": 0
+      },
+      "memo": ""
+    },
+    {
+      "id": "d19",
+      "name": "시댁계",
+      "color": "purple",
+      "type": "out",
+      "amounts": {
+        "c1": 0,
+        "c2": 0,
+        "c3": 0,
+        "c4": 0
+      },
+      "memo": ""
+    },
+    {
+      "id": "d20",
+      "name": "선영.생활비",
+      "color": "blue",
+      "type": "out",
+      "amounts": {
+        "c1": 0,
+        "c2": 0,
+        "c3": 0,
+        "c4": 0
+      },
+      "memo": ""
+    },
+    {
+      "id": "d21",
+      "name": "선영.고정비",
+      "color": "blue",
+      "type": "out",
+      "amounts": {
+        "c1": 0,
+        "c2": 0,
+        "c3": 0,
+        "c4": 0
+      },
+      "memo": ""
+    },
+    {
+      "id": "d22",
+      "name": "적금",
+      "color": "mint",
+      "type": "out",
+      "amounts": {
+        "c1": 0,
+        "c2": 0,
+        "c3": 0,
+        "c4": 0
+      },
+      "memo": ""
+    },
+    {
+      "id": "d23",
+      "name": "우리카드",
+      "color": "sand",
+      "type": "out",
+      "amounts": {
+        "c1": 0,
+        "c2": 0,
+        "c3": 0,
+        "c4": 0
+      },
+      "memo": ""
+    },
+    {
+      "id": "d24",
+      "name": "롯데카드",
+      "color": "sand",
+      "type": "out",
+      "amounts": {
+        "c1": 0,
+        "c2": 0,
+        "c3": 0,
+        "c4": 0
+      },
+      "memo": ""
+    },
+    {
+      "id": "d25",
+      "name": "비씨카드",
+      "color": "sand",
+      "type": "out",
+      "amounts": {
+        "c1": 0,
+        "c2": 0,
+        "c3": 0,
+        "c4": 0
+      },
+      "memo": ""
+    },
+    {
+      "id": "d26",
+      "name": "신한카드",
+      "color": "sand",
+      "type": "out",
+      "amounts": {
+        "c1": 0,
+        "c2": 0,
+        "c3": 0,
+        "c4": 0
+      },
+      "memo": ""
+    },
+    {
+      "id": "d27",
+      "name": "예비비",
+      "color": "yellow",
+      "type": "out",
+      "amounts": {
+        "c1": 0,
+        "c2": 0,
+        "c3": 0,
+        "c4": 0
+      },
+      "memo": ""
+    },
+    {
+      "id": "d28",
+      "name": "용돈",
+      "color": "green",
+      "type": "out",
+      "amounts": {
+        "c1": 0,
+        "c2": 0,
+        "c3": 0,
+        "c4": 0
+      },
+      "memo": ""
+    }
+  ],
+  "updatedAt": "2026-10-11T10:32:25.511Z"
+}
