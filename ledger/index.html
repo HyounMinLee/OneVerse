@@ -196,6 +196,25 @@ button.hero-cell:active{transform:scale(.98)}
 #toast{position:fixed;left:50%;bottom:calc(28px + env(safe-area-inset-bottom));z-index:60;transform:translate(-50%,20px);max-width:calc(100% - 40px);
   padding:12px 18px;border-radius:16px;background:var(--text);color:var(--bg);font-size:14px;font-weight:650;opacity:0;pointer-events:none;transition:.25s;word-break:keep-all;text-align:center}
 #toast.on{opacity:1;transform:translate(-50%,0)}
+/* 잠금 화면 */
+.lock{position:fixed;inset:0;z-index:55;display:none;align-items:center;justify-content:center;padding:24px 20px calc(24px + env(safe-area-inset-bottom));background:var(--bg);overflow:hidden}
+.lock.on{display:flex}
+.lock::before,.lock::after{content:'';position:absolute;border-radius:50%;filter:blur(64px);pointer-events:none}
+.lock::before{width:80vw;height:80vw;max-width:480px;max-height:480px;top:-20vh;right:-25vw;background:#bfe3da;opacity:.7}
+.lock::after{width:70vw;height:70vw;max-width:420px;max-height:420px;bottom:-15vh;left:-30vw;background:#f8d2c6;opacity:.6}
+@media (prefers-color-scheme: dark){.lock::before{background:#1d3a34}.lock::after{background:#3b2620}}
+.lock-card{position:relative;z-index:1;width:100%;max-width:360px;padding:30px 24px 24px;border-radius:30px;background:var(--surface);box-shadow:var(--shadow);text-align:center}
+.lock-card svg.lock-icon{width:64px;height:64px;margin:0 auto 14px;border-radius:16px;box-shadow:0 8px 20px rgba(47,115,102,.25)}
+.lock-card h2{margin:0;font-size:21px;font-weight:800;letter-spacing:-.03em}
+.lock-card p{margin:6px 0 20px;font-size:13px;line-height:1.55;color:var(--muted);word-break:keep-all}
+.lock-card .field input{text-align:center;letter-spacing:.08em}
+.check{display:flex;align-items:center;justify-content:center;gap:8px;margin:2px 0 16px;font-size:13px;font-weight:650;color:var(--muted)}
+.check input{width:18px;height:18px;accent-color:var(--accent)}
+.lock-err{min-height:20px;margin:-6px 0 10px;font-size:13px;font-weight:650;color:var(--danger)}
+.lock-card.shake{animation:shake .4s}
+@keyframes shake{20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
+.enc-pill{display:inline-flex;align-items:center;gap:4px;height:22px;padding:0 8px;border-radius:11px;background:var(--accent-soft);color:var(--accent);font-size:11px;font-weight:750}
+.enc-pill svg{width:11px;height:11px}
 @media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
 </style>
 </head>
@@ -210,6 +229,9 @@ button.hero-cell:active{transform:scale(.98)}
     </div>
     <div class="top-actions">
       <span class="sync" id="sync"><i></i><em id="syncText" style="font-style:normal">저장 중</em></span>
+      <button class="icon-btn" id="btnLock" aria-label="잠그기" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2.5"/><path d="M8 11V7.5a4 4 0 0 1 8 0V11"/></svg>
+      </button>
       <button class="icon-btn" id="btnSettings" aria-label="설정">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
         <i class="dot" id="settingsDot"></i>
@@ -286,7 +308,29 @@ button.hero-cell:active{transform:scale(.98)}
   <h3>계좌(열) 이름 · 이 달부터 적용</h3>
   <div class="field-row" id="colNames"></div>
   <button class="btn full" id="colSave">열 이름 저장</button>
+
+  <h3>내역 암호화</h3>
+  <p class="set-note" id="encStatus"></p>
+  <div id="encForm">
+    <label class="field"><span>새 암호 (8자 이상)</span><input type="password" id="encPw1" autocomplete="new-password" spellcheck="false"></label>
+    <label class="field"><span>새 암호 확인</span><input type="password" id="encPw2" autocomplete="new-password" spellcheck="false"></label>
+    <p class="set-help">암호는 어디에도 저장되지 않아요. 잊어버리면 누구도 내역을 복구할 수 없으니 따로 안전하게 적어 두세요.</p>
+    <button class="btn full primary" id="encApply">암호화 켜기</button>
+  </div>
 </section>
+
+<!-- 잠금 화면 -->
+<div class="lock" id="lock" role="dialog" aria-modal="true" aria-labelledby="lockTitle">
+  <form class="lock-card" id="lockForm" novalidate>
+    <svg class="lock-icon" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="16" fill="#2c6e63"/><rect x="18" y="29" width="28" height="21" rx="5" fill="#fbfaf6"/><path d="M24 29v-6a8 8 0 0 1 16 0v6" fill="none" stroke="#fbfaf6" stroke-width="4.5" stroke-linecap="round"/><circle cx="32" cy="38.5" r="3.2" fill="#2c6e63"/><path d="M32 40v4" stroke="#2c6e63" stroke-width="3" stroke-linecap="round"/></svg>
+    <h2 id="lockTitle">잠긴 가계부</h2>
+    <p>내역이 암호화되어 있어요.<br>암호를 입력하면 이 기기에서만 풀려요.</p>
+    <label class="field"><input type="password" id="lockPw" placeholder="암호" autocomplete="current-password" spellcheck="false" aria-label="암호"></label>
+    <div class="lock-err" id="lockErr" role="alert"></div>
+    <label class="check"><input type="checkbox" id="lockRemember">이 기기에서 기억하기</label>
+    <button class="btn full primary" id="lockOpen" type="submit">열기</button>
+  </form>
+</div>
 
 <div id="toast" role="status" aria-live="polite"></div>
 
@@ -295,7 +339,11 @@ button.hero-cell:active{transform:scale(.98)}
   'use strict';
 
   /* ================= 상수 ================= */
-  const g_objKeys = { strConfig: 'ledger.github', strShared: 'dailyVerse.github', strCache: 'ledger.cache.v1' };
+  const g_objKeys = { strConfig: 'ledger.github', strShared: 'dailyVerse.github', strCache: 'ledger.cache.v1', strVault: 'ledger.vault.v1' };
+  const g_strVaultFile = 'vault.json';
+  const g_nKdfIterations = 600000;      // PBKDF2-SHA256 반복 횟수
+  const g_nMinPassword = 8;
+  const g_strCheckText = 'ledger-vault-check-v1';
   const g_strApi = 'https://api.github.com';
   const g_strDefaultPath = 'ledger/data';
   const g_nStaleMs = 60 * 1000;
@@ -369,6 +417,17 @@ button.hero-cell:active{transform:scale(.98)}
     const arrBytes = new Uint8Array(strBin.length);
     for (let i = 0; i < strBin.length; i++) arrBytes[i] = strBin.charCodeAt(i);
     return new TextDecoder().decode(arrBytes);
+  }
+  function BytesToB64(arrBytes) {
+    let strBin = '';
+    for (let i = 0; i < arrBytes.length; i += 0x8000) strBin += String.fromCharCode.apply(null, arrBytes.subarray(i, i + 0x8000));
+    return btoa(strBin);
+  }
+  function B64ToBytes(strB64) {
+    const strBin = atob(String(strB64).replace(/\s/g, ''));
+    const arrBytes = new Uint8Array(strBin.length);
+    for (let i = 0; i < strBin.length; i++) arrBytes[i] = strBin.charCodeAt(i);
+    return arrBytes;
   }
 
   /* ================= 브라우저 저장소 ================= */
@@ -492,14 +551,15 @@ button.hero-cell:active{transform:scale(.98)}
   const RepoKey = () => `${g_objConfig.owner}/${g_objConfig.repo}@${g_objConfig.branch}:${CleanPath(g_objConfig.path)}`;
 
   /** 토큰 없이 읽을 때 GitHub Pages에 배포된 파일 주소 */
-  function PagesUrl(strMk) {
+  function PagesUrl(strMk) { return PagesFileUrl(MonthFilePath(strMk)); }
+  function PagesFileUrl(strPath) {
     const strHost = location.hostname;
     let strRoot = new URL('../', location.href).pathname;
     if (/\.github\.io$/i.test(strHost)) {
       const strSeg = location.pathname.split('/').filter(Boolean)[0];
       strRoot = strSeg && !strSeg.includes('.') && g_objConfig.repo === strSeg ? `/${strSeg}/` : '/';
     }
-    return `${location.origin}${strRoot}${MonthFilePath(strMk)}?t=${Date.now()}`;
+    return `${location.origin}${strRoot}${strPath}?t=${Date.now()}`;
   }
 
   async function Gh(strMethod, strUrl, objBody) {
@@ -523,51 +583,203 @@ button.hero-cell:active{transform:scale(.98)}
     return new Error(`GitHub 오류 (${objRes.status})`);
   }
 
+  /* ================= 암호화 (Web Crypto: PBKDF2-SHA256 → AES-256-GCM) ================= */
+  const g_objVault = { objMeta: null, objKey: null, bChecked: false, objCheck: null };
+  const VaultPath = () => `${CleanPath(g_objConfig.path)}/${g_strVaultFile}`;
+  const IsLocked = () => !!g_objVault.objMeta && !g_objVault.objKey;
+  const RepoApi = () => `${g_strApi}/repos/${encodeURIComponent(g_objConfig.owner)}/${encodeURIComponent(g_objConfig.repo)}`;
+  const BranchRef = () => g_objConfig.branch.split('/').map(encodeURIComponent).join('/');
+
+  function IsVaultMeta(objM) {
+    return !!objM && objM.app === 'ledger-vault' && objM.v === 1 && typeof objM.id === 'string' && !!objM.kdf && typeof objM.kdf.salt === 'string'
+      && Number.isInteger(objM.kdf.iterations) && objM.kdf.iterations >= 100000 && !!objM.check && typeof objM.check.iv === 'string' && typeof objM.check.ct === 'string';
+  }
+
+  async function DeriveKey(strPassword, objMeta) {
+    const objBase = await crypto.subtle.importKey('raw', new TextEncoder().encode(strPassword), 'PBKDF2', false, ['deriveKey']);
+    return crypto.subtle.deriveKey({ name: 'PBKDF2', hash: 'SHA-256', salt: B64ToBytes(objMeta.kdf.salt), iterations: objMeta.kdf.iterations }, objBase, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+  }
+
+  async function EncryptText(objKey, strText, strAad) {
+    const arrIv = crypto.getRandomValues(new Uint8Array(12));
+    const bufCt = await crypto.subtle.encrypt({ name: 'AES-GCM', iv: arrIv, additionalData: new TextEncoder().encode(strAad) }, objKey, new TextEncoder().encode(strText));
+    return { iv: BytesToB64(arrIv), ct: BytesToB64(new Uint8Array(bufCt)) };
+  }
+
+  async function DecryptText(objKey, objEnc, strAad) {
+    const bufPt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: B64ToBytes(objEnc.iv), additionalData: new TextEncoder().encode(strAad) }, objKey, B64ToBytes(objEnc.ct));
+    return new TextDecoder().decode(bufPt);
+  }
+
+  async function VerifyKey(objKey, objMeta) {
+    try { return (await DecryptText(objKey, objMeta.check, `ledger-vault:${objMeta.id}`)) === g_strCheckText; } catch { return false; }
+  }
+
+  async function CreateVault(strPassword) {
+    const objMeta = { app: 'ledger-vault', v: 1, id: NewId(), alg: 'AES-256-GCM', kdf: { name: 'PBKDF2', hash: 'SHA-256', iterations: g_nKdfIterations, salt: BytesToB64(crypto.getRandomValues(new Uint8Array(16))) }, check: null, createdAt: new Date().toISOString() };
+    const objKey = await DeriveKey(strPassword, objMeta);
+    objMeta.check = await EncryptText(objKey, g_strCheckText, `ledger-vault:${objMeta.id}`);
+    return { objMeta, objKey };
+  }
+
+  /** 월 데이터를 파일 내용(문자열)으로 변환. 암호가 설정돼 있으면 암호화 */
+  async function EncodeMonthWith(strMk, objData, objMeta, objKey) {
+    const strJson = JSON.stringify(NormalizeMonth(objData, strMk), null, 2);
+    if (!objMeta) return `${strJson}\n`;
+    if (!objKey) throw new Error('잠금을 먼저 풀어 주세요');
+    const objEnc = await EncryptText(objKey, strJson, `ledger:${objMeta.id}:${strMk}`);
+    return `${JSON.stringify({ app: 'ledger-enc', v: 1, vault: objMeta.id, iv: objEnc.iv, ct: objEnc.ct }, null, 2)}\n`;
+  }
+  const EncodeMonth = (strMk, objData) => EncodeMonthWith(strMk, objData, g_objVault.objMeta, g_objVault.objKey);
+
+  /** 파일 내용(JSON 객체)을 월 데이터로 변환. 암호화된 파일이면 복호화 */
+  async function DecodeMonth(strMk, objRaw) {
+    if (!objRaw || objRaw.app !== 'ledger-enc') return NormalizeMonth(objRaw, strMk);
+    if (!g_objVault.objMeta || !g_objVault.objKey) throw new Error('잠금을 먼저 풀어 주세요');
+    if (objRaw.vault !== g_objVault.objMeta.id) throw new Error(`${strMk} 파일이 다른 암호로 저장돼 있어요`);
+    try {
+      return NormalizeMonth(JSON.parse(await DecryptText(g_objVault.objKey, objRaw, `ledger:${objRaw.vault}:${strMk}`)), strMk);
+    } catch (e) {
+      console.error(`복호화 실패: ${strMk}`, e);
+      throw new Error(`${strMk} 파일을 복호화하지 못했어요`);
+    }
+  }
+
+  function SaveVaultCache() { g_objPref.Set(g_objKeys.strVault, JSON.stringify({ repo: RepoKey(), meta: g_objVault.objMeta })); }
+  function LoadVaultCache() {
+    const objC = ReadJson(g_objKeys.strVault);
+    g_objVault.objMeta = objC && objC.repo === RepoKey() && IsVaultMeta(objC.meta) ? objC.meta : null;
+    g_objVault.objKey = null;
+    g_objVault.bChecked = false;
+  }
+
+  /** 원격 vault.json 확인. 암호 설정이 바뀌었으면 true */
+  function EnsureVault() {
+    if (g_objVault.objCheck) return g_objVault.objCheck;
+    const fnRun = async () => {
+      let objMeta = null;
+      if (CanWrite()) {
+        const objRes = await Gh('GET', `${ContentsUrl(VaultPath())}?ref=${encodeURIComponent(g_objConfig.branch)}`);
+        if (objRes.ok) objMeta = JSON.parse(B64Decode((await objRes.json()).content));
+        else if (objRes.status !== 404) throw await ApiError(objRes);
+      } else if (HasRepo()) {
+        let objRes;
+        try { objRes = await fetch(PagesFileUrl(VaultPath()), { cache: 'no-store' }); } catch { throw new Error('네트워크에 연결할 수 없어요'); }
+        if (objRes.ok) objMeta = await objRes.json();
+        else if (objRes.status !== 404) throw new Error(`암호 설정을 확인하지 못했어요 (${objRes.status})`);
+      }
+      if (objMeta && !IsVaultMeta(objMeta)) throw new Error('vault.json 형식이 올바르지 않아요');
+      const bChanged = (objMeta ? objMeta.id : '') !== (g_objVault.objMeta ? g_objVault.objMeta.id : '');
+      if (bChanged) { g_objVault.objMeta = objMeta; g_objVault.objKey = null; }
+      g_objVault.bChecked = true;
+      SaveVaultCache();
+      return bChanged;
+    };
+    g_objVault.objCheck = fnRun().finally(() => { g_objVault.objCheck = null; });
+    return g_objVault.objCheck;
+  }
+
+  /* 이 기기에서 기억하기: 추출 불가능한 CryptoKey를 IndexedDB에 보관 (암호 자체는 저장하지 않음) */
+  function IdbOpen() {
+    return new Promise((fnOk, fnFail) => {
+      if (!window.indexedDB) { fnFail(new Error('IndexedDB 없음')); return; }
+      const objReq = indexedDB.open('ledger-keys', 1);
+      objReq.onupgradeneeded = () => objReq.result.createObjectStore('keys');
+      objReq.onsuccess = () => fnOk(objReq.result);
+      objReq.onerror = () => fnFail(objReq.error);
+    });
+  }
+  async function IdbDo(strMode, fnWork) {
+    const objDb = await IdbOpen();
+    try {
+      return await new Promise((fnOk, fnFail) => {
+        const objTx = objDb.transaction('keys', strMode);
+        const objReq = fnWork(objTx.objectStore('keys'));
+        objTx.oncomplete = () => fnOk(objReq ? objReq.result : undefined);
+        objTx.onerror = () => fnFail(objTx.error);
+        objTx.onabort = () => fnFail(objTx.error);
+      });
+    } finally { objDb.close(); }
+  }
+  const RememberSlot = () => `${RepoKey()}|${g_objVault.objMeta ? g_objVault.objMeta.id : ''}`;
+  async function RememberKey(objKey) { await IdbDo('readwrite', (s) => s.put(objKey, RememberSlot())); }
+  async function RecallKey() { try { return await IdbDo('readonly', (s) => s.get(RememberSlot())); } catch { return null; } }
+  async function ForgetKeys() { try { await IdbDo('readwrite', (s) => s.clear()); } catch { /* 무시 */ } }
+
+  async function TryRememberedKey() {
+    if (!g_objVault.objMeta || g_objVault.objKey) return;
+    const objKey = await RecallKey();
+    if (objKey && await VerifyKey(objKey, g_objVault.objMeta)) g_objVault.objKey = objKey;
+  }
+
   /* ================= 월 데이터 저장소 ================= */
   const g_objStore = {
-    mapMonths: new Map(),   // 월 → { objData|null, strSha, nFetchedAt }
+    mapMonths: new Map(),   // 월 → { objData|null, strSha, nFetchedAt, objRaw }
+    mapRaw: new Map(),      // 잠금 상태에서 아직 복호화하지 않은 캐시(암호문)
     setFresh: new Set(),    // 이번 실행에서 원격 확인을 마친 월
     mapInflight: new Map(),
     strRepo: '',
 
+    /** 브라우저 캐시 복원. 암호화 사용 중이면 암호문만 보관돼 있음 */
     Hydrate() {
       const objCache = ReadJson(g_objKeys.strCache);
       this.strRepo = RepoKey();
       if (!objCache || objCache.repo !== this.strRepo || !objCache.months) return;
+      const strVaultId = g_objVault.objMeta ? g_objVault.objMeta.id : '';
+      if ((objCache.vault || '') !== strVaultId) return;
       Object.entries(objCache.months).forEach(([strMk, objM]) => {
         if (!IsMonthKey(strMk) || !objM) return;
-        this.mapMonths.set(strMk, { objData: objM.data ? NormalizeMonth(objM.data, strMk) : null, strSha: objM.sha || null, nFetchedAt: 0 });
+        if (strVaultId) { this.mapRaw.set(strMk, { objRaw: objM.raw || null, strSha: objM.sha || null }); return; }
+        this.mapMonths.set(strMk, { objData: objM.data ? NormalizeMonth(objM.data, strMk) : null, strSha: objM.sha || null, nFetchedAt: 0, objRaw: null });
       });
+    },
+
+    async DecryptCached() {
+      for (const [strMk, objR] of this.mapRaw) {
+        if (this.mapMonths.has(strMk)) continue;
+        try { this.mapMonths.set(strMk, { objData: objR.objRaw ? await DecodeMonth(strMk, objR.objRaw) : null, strSha: objR.strSha, nFetchedAt: 0, objRaw: objR.objRaw }); } catch { /* 원격에서 다시 읽음 */ }
+      }
     },
 
     Persist() {
       const objMonths = {};
-      this.mapMonths.forEach((objM, strMk) => { objMonths[strMk] = { data: objM.objData, sha: objM.strSha }; });
-      g_objPref.Set(g_objKeys.strCache, JSON.stringify({ repo: RepoKey(), months: objMonths }));
+      if (g_objVault.objMeta) {
+        this.mapRaw.forEach((objR, strMk) => { objMonths[strMk] = { raw: objR.objRaw, sha: objR.strSha }; });
+        this.mapMonths.forEach((objM, strMk) => { if (objM.objRaw !== undefined) objMonths[strMk] = { raw: objM.objRaw, sha: objM.strSha }; });
+      } else {
+        this.mapMonths.forEach((objM, strMk) => { objMonths[strMk] = { data: objM.objData, sha: objM.strSha }; });
+      }
+      g_objPref.Set(g_objKeys.strCache, JSON.stringify({ repo: RepoKey(), vault: g_objVault.objMeta ? g_objVault.objMeta.id : '', months: objMonths }));
     },
 
-    Reset() { this.mapMonths.clear(); this.setFresh.clear(); this.strRepo = RepoKey(); this.Persist(); },
+    Reset() { this.mapMonths.clear(); this.mapRaw.clear(); this.setFresh.clear(); this.strRepo = RepoKey(); this.Persist(); },
 
-    Put(strMk, strSha, objData) {
-      this.mapMonths.set(strMk, { objData, strSha, nFetchedAt: Date.now() });
+    Put(strMk, strSha, objData, objRaw) {
+      this.mapMonths.set(strMk, { objData, strSha, nFetchedAt: Date.now(), objRaw: objRaw === undefined ? null : objRaw });
+      this.mapRaw.delete(strMk);
       this.setFresh.add(strMk);
       this.Persist();
     },
 
     async FetchRemote(strMk) {
+      let objRaw = null;
+      let strSha = null;
       if (CanWrite()) {
         const objRes = await Gh('GET', `${ContentsUrl(MonthFilePath(strMk))}?ref=${encodeURIComponent(g_objConfig.branch)}`);
-        if (objRes.status === 404) return { objData: null, strSha: null };
+        if (objRes.status === 404) return { objData: null, strSha: null, objRaw: null };
         if (!objRes.ok) throw await ApiError(objRes);
         const objJson = await objRes.json();
-        return { objData: NormalizeMonth(JSON.parse(B64Decode(objJson.content)), strMk), strSha: objJson.sha };
+        objRaw = JSON.parse(B64Decode(objJson.content));
+        strSha = objJson.sha;
+      } else {
+        if (!HasRepo()) return { objData: null, strSha: null, objRaw: null };
+        let objRes;
+        try { objRes = await fetch(PagesUrl(strMk), { cache: 'no-store' }); } catch { throw new Error('네트워크에 연결할 수 없어요'); }
+        if (objRes.status === 404) return { objData: null, strSha: null, objRaw: null };
+        if (!objRes.ok) throw new Error(`데이터를 불러오지 못했어요 (${objRes.status})`);
+        objRaw = await objRes.json();
       }
-      if (!HasRepo()) return { objData: null, strSha: null };
-      let objRes;
-      try { objRes = await fetch(PagesUrl(strMk), { cache: 'no-store' }); } catch { throw new Error('네트워크에 연결할 수 없어요'); }
-      if (objRes.status === 404) return { objData: null, strSha: null };
-      if (!objRes.ok) throw new Error(`데이터를 불러오지 못했어요 (${objRes.status})`);
-      return { objData: NormalizeMonth(await objRes.json(), strMk), strSha: null };
+      return { objData: await DecodeMonth(strMk, objRaw), strSha, objRaw };
     },
 
     /** 오래된 월만 원격에서 다시 읽음. 내용이 바뀌면 true */
@@ -576,7 +788,7 @@ button.hero-cell:active{transform:scale(.98)}
       if (!bForce && objCur && this.setFresh.has(strMk) && Date.now() - objCur.nFetchedAt < g_nStaleMs) return false;
       if (!this.mapInflight.has(strMk)) {
         const strBefore = JSON.stringify(objCur ? objCur.objData : undefined);
-        const objPromise = this.FetchRemote(strMk).then((objR) => { this.Put(strMk, objR.strSha, objR.objData); return JSON.stringify(objR.objData) !== strBefore; }).finally(() => this.mapInflight.delete(strMk));
+        const objPromise = this.FetchRemote(strMk).then((objR) => { this.Put(strMk, objR.strSha, objR.objData, objR.objRaw); return JSON.stringify(objR.objData) !== strBefore; }).finally(() => this.mapInflight.delete(strMk));
         this.mapInflight.set(strMk, objPromise);
       }
       return this.mapInflight.get(strMk);
@@ -586,34 +798,98 @@ button.hero-cell:active{transform:scale(.98)}
     Data(strMk) { const objM = this.mapMonths.get(strMk); return objM ? objM.objData : null; },
   };
 
-  // GitHub Contents API는 같은 브랜치에 동시 커밋하면 충돌하므로 순차 실행
+  // GitHub는 같은 브랜치에 동시 커밋하면 충돌하므로 모든 쓰기를 순차 실행
   let g_objWriteChain = Promise.resolve();
   let g_nPending = 0;
 
+  function Serialize(fnRun) {
+    g_nPending += 1;
+    SetSync('저장 중', false);
+    const objPromise = g_objWriteChain.then(fnRun, fnRun);
+    g_objWriteChain = objPromise.catch(() => {});
+    return objPromise.finally(() => { g_nPending -= 1; if (g_nPending === 0) SetSync('', false); });
+  }
+
+  /** 쓰기 전 확인: 다른 기기에서 암호를 켰는데 이 기기가 평문으로 덮어쓰는 일을 막음 */
+  async function GuardWrite() {
+    if (!CanWrite()) throw new Error('먼저 GitHub를 연결해 주세요');
+    // 매 저장마다 vault.json을 확인 (요청 1회). 다른 기기에서 암호를 켜거나 바꾼 경우 이전 설정으로 쓰지 않음
+    if (await EnsureVault()) { OnVaultChanged(); throw new Error('다른 기기에서 암호 설정이 바뀌었어요. 다시 저장해 주세요'); }
+    if (IsLocked()) throw new Error('잠금을 먼저 풀어 주세요');
+  }
+
   /** 최신 월 파일을 읽어 fnApply로 수정 후 커밋. 충돌(409/422)이면 1회 재시도 */
   function MutateMonth(strMk, fnApply, strMessage, objFallback) {
-    const fnRun = async () => {
-      if (!CanWrite()) throw new Error('먼저 GitHub를 연결해 주세요');
+    return Serialize(async () => {
+      await GuardWrite();
+      // 암호화 사용 중에는 커밋 메시지에 항목명·금액을 남기지 않음
+      const strCommitMsg = g_objVault.objMeta ? `가계부 ${strMk} 갱신` : strMessage;
       for (let nTry = 0; nTry < 2; nTry++) {
         const objCur = await g_objStore.FetchRemote(strMk);
         const objData = objCur.objData ? Clone(objCur.objData) : Clone(objFallback);
         fnApply(objData);
         objData.month = strMk;
         objData.updatedAt = new Date().toISOString();
-        const strContent = B64Encode(`${JSON.stringify(NormalizeMonth(objData, strMk), null, 2)}\n`);
-        const objRes = await Gh('PUT', ContentsUrl(MonthFilePath(strMk)), { message: strMessage, content: strContent, branch: g_objConfig.branch, ...(objCur.strSha ? { sha: objCur.strSha } : {}) });
+        const strFile = await EncodeMonth(strMk, objData);
+        const objRes = await Gh('PUT', ContentsUrl(MonthFilePath(strMk)), { message: strCommitMsg, content: B64Encode(strFile), branch: g_objConfig.branch, ...(objCur.strSha ? { sha: objCur.strSha } : {}) });
         if ((objRes.status === 409 || objRes.status === 422) && nTry === 0) { console.warn(`커밋 충돌로 다시 시도합니다: ${strMk}`); continue; }
         if (!objRes.ok) throw await ApiError(objRes);
         const objJson = await objRes.json();
-        g_objStore.Put(strMk, objJson.content ? objJson.content.sha : null, NormalizeMonth(objData, strMk));
+        g_objStore.Put(strMk, objJson.content ? objJson.content.sha : null, NormalizeMonth(objData, strMk), JSON.parse(strFile));
         return;
       }
-    };
-    g_nPending += 1;
-    SetSync('저장 중', false);
-    const objPromise = g_objWriteChain.then(fnRun, fnRun);
-    g_objWriteChain = objPromise.catch(() => {});
-    return objPromise.finally(() => { g_nPending -= 1; if (g_nPending === 0) SetSync('', false); });
+    });
+  }
+
+  async function GitJson(strMethod, strPath, objBody) {
+    const objRes = await Gh(strMethod, `${RepoApi()}${strPath}`, objBody);
+    if (!objRes.ok) throw await ApiError(objRes);
+    return objRes.json();
+  }
+
+  /**
+   * 모든 월 파일을 새 암호(objNewMeta/objNewKey)로 다시 써서 vault.json과 함께 커밋 1개로 반영.
+   * Git Data API(트리→커밋→브랜치 이동)를 쓰므로 중간에 실패해도 일부 파일만 바뀌는 일이 없음.
+   */
+  function ReencryptAll(objNewMeta, objNewKey, strMessage) {
+    return Serialize(async () => {
+      if (!CanWrite()) throw new Error('먼저 GitHub를 연결해 주세요');
+      const strPrefix = `${CleanPath(g_objConfig.path)}/`;
+      const reMonth = /^\d{4}\/(\d{4}-\d{2})\.json$/;
+      for (let nTry = 0; nTry < 2; nTry++) {
+        const objRef = await GitJson('GET', `/git/ref/heads/${BranchRef()}`);
+        const strHead = objRef.object.sha;
+        const objCommit = await GitJson('GET', `/git/commits/${strHead}`);
+        const objTree = await GitJson('GET', `/git/trees/${objCommit.tree.sha}?recursive=1`);
+        if (objTree.truncated) throw new Error('저장소 파일이 너무 많아 한 번에 처리할 수 없어요');
+        const objRemoteVault = objTree.tree.find((t) => t.path === VaultPath());
+        if (objRemoteVault && !g_objVault.objMeta) throw new Error('다른 기기에서 이미 암호를 설정했어요. 앱을 새로고침하세요');
+        const arrEntries = [];
+        for (const objT of objTree.tree) {
+          if (objT.type !== 'blob' || !objT.path.startsWith(strPrefix)) continue;
+          const arrMatch = objT.path.slice(strPrefix.length).match(reMonth);
+          if (!arrMatch || !IsMonthKey(arrMatch[1])) continue;
+          const objBlob = await GitJson('GET', `/git/blobs/${objT.sha}`);
+          const objData = await DecodeMonth(arrMatch[1], JSON.parse(B64Decode(objBlob.content)));
+          arrEntries.push({ path: objT.path, mode: '100644', type: 'blob', content: await EncodeMonthWith(arrMatch[1], objData, objNewMeta, objNewKey) });
+        }
+        arrEntries.push({ path: VaultPath(), mode: '100644', type: 'blob', content: `${JSON.stringify(objNewMeta, null, 2)}\n` });
+        const objNewTree = await GitJson('POST', '/git/trees', { base_tree: objCommit.tree.sha, tree: arrEntries });
+        const objNewCommit = await GitJson('POST', '/git/commits', { message: strMessage, tree: objNewTree.sha, parents: [strHead] });
+        const objRes = await Gh('PATCH', `${RepoApi()}/git/refs/heads/${BranchRef()}`, { sha: objNewCommit.sha, force: false });
+        if (objRes.ok) {
+          // 다음 순번의 쓰기가 이전 키로 암호화하지 않도록 직렬 구간 안에서 바로 교체
+          g_objVault.objMeta = objNewMeta;
+          g_objVault.objKey = objNewKey;
+          g_objVault.bChecked = true;
+          SaveVaultCache();
+          return arrEntries.length - 1;
+        }
+        if ((objRes.status === 409 || objRes.status === 422) && nTry === 0) { console.warn('브랜치가 그사이 바뀌어 다시 시도합니다'); continue; }
+        throw await ApiError(objRes);
+      }
+      return 0;
+    });
   }
 
   /* ================= 상태 ================= */
@@ -668,6 +944,7 @@ button.hero-cell:active{transform:scale(.98)}
     g_objEl.elSub.className = bCurrent ? '' : 'today-link';
     g_objEl.elSub.textContent = bCurrent ? '이번 달' : '이번 달로 이동';
     g_objEl.elDot.classList.toggle('on', !CanWrite());
+    Q('#btnLock').hidden = !(g_objVault.objMeta && g_objVault.objKey);
   }
 
   function RenderPane() {
@@ -745,6 +1022,7 @@ button.hero-cell:active{transform:scale(.98)}
     const strMk = g_objState.strMonth;
     g_objState.strError = '';
     if (!HasRepo()) { g_objState.bLoading = false; RenderPane(); return; }
+    if (IsLocked()) { ShowLock(); return; }
     g_objState.bLoading = true;
     if (!g_objStore.Known(strMk)) RenderPane();
     try {
@@ -763,6 +1041,8 @@ button.hero-cell:active{transform:scale(.98)}
     } catch (e) {
       console.error('월 데이터 불러오기 실패', e);
       if (nSeq !== g_nLoadSeq) return;
+      if (IsLocked()) { g_objState.bLoading = false; ShowLock(); return; }
+      if (HasRepo()) EnsureVault().then((bChanged) => { if (bChanged) OnVaultChanged(); }).catch(() => {});
       g_objState.bLoading = false;
       g_objState.strError = e.message;
       RenderPane();
@@ -775,6 +1055,7 @@ button.hero-cell:active{transform:scale(.98)}
   function Commit(fnApply, strMessage) {
     const strMk = g_objState.strMonth;
     if (!CanWrite()) { Toast('먼저 GitHub를 연결해 주세요'); OpenSettings(); return Promise.resolve(false); }
+    if (IsLocked()) { ShowLock(); return Promise.resolve(false); }
     const objFallback = Clone(g_objState.objView);
     const objLocal = Clone(g_objState.objView);
     fnApply(objLocal);
@@ -952,8 +1233,132 @@ button.hero-cell:active{transform:scale(.98)}
     else if (!g_objConfig.token) SetGhStatus('토큰이 없어 읽기 전용이에요. GitHub Pages에 배포된 내용을 보여줘요.', true);
     else SetGhStatus(`연결됨 · ${g_objConfig.owner}/${g_objConfig.repo} (${g_objConfig.branch}) · ${CleanPath(g_objConfig.path)}`, false);
     Q('#colNames').innerHTML = g_objState.objView.columns.map((objCol, i) => `<label class="field"><span>${i + 1}번째 열</span><input type="text" maxlength="12" data-col="${objCol.id}" value="${Esc(objCol.name)}" autocomplete="off"></label>`).join('');
+    RenderEncSection();
     OpenSheet(Q('#settingsSheet'));
   }
+
+  /* ================= 암호화 설정 · 잠금 화면 ================= */
+  function SetEncStatus(strMsg, bWarn) {
+    const elS = Q('#encStatus');
+    elS.textContent = strMsg;
+    elS.classList.toggle('warn', !!bWarn);
+  }
+
+  function RenderEncSection() {
+    const bOn = !!g_objVault.objMeta;
+    if (!bOn) SetEncStatus('꺼짐 · 공개 저장소라면 누구나 금액을 볼 수 있어요', true);
+    else SetEncStatus('켜짐 · AES-256-GCM으로 암호화되어 커밋돼요. 커밋 메시지에도 항목·금액을 남기지 않아요', false);
+    Q('#encApply').textContent = bOn ? '암호 변경' : '암호화 켜기';
+    Q('#encForm').style.display = CanWrite() && !IsLocked() ? '' : 'none';
+    if (!CanWrite()) SetEncStatus(`${bOn ? '켜짐' : '꺼짐'} · 토큰을 연결해야 바꿀 수 있어요`, !bOn);
+  }
+
+  Q('#encApply').addEventListener('click', async () => {
+    const elBtn = Q('#encApply');
+    const strPw1 = Q('#encPw1').value;
+    const strPw2 = Q('#encPw2').value;
+    if (strPw1.length < g_nMinPassword) { SetEncStatus(`암호는 ${g_nMinPassword}자 이상이어야 해요`, true); Q('#encPw1').focus(); return; }
+    if (strPw1 !== strPw2) { SetEncStatus('두 암호가 서로 달라요', true); Q('#encPw2').focus(); return; }
+    const bEnable = !g_objVault.objMeta;
+    if (!confirm(bEnable ? '저장소의 모든 월 내역을 암호화해 커밋해요.\n암호를 잊으면 누구도 복구할 수 없어요. 계속할까요?' : '새 암호로 모든 월 내역을 다시 암호화해요.\n다른 기기에서도 새 암호로 다시 열어야 해요. 계속할까요?')) return;
+    elBtn.disabled = true;
+    SetEncStatus(bEnable ? '암호화하는 중… 화면을 닫지 마세요' : '새 암호로 바꾸는 중… 화면을 닫지 마세요', false);
+    try {
+      if (await EnsureVault()) { OnVaultChanged(); throw new Error('다른 기기에서 암호 설정이 바뀌었어요. 다시 시도해 주세요'); }
+      if (IsLocked()) throw new Error('잠금을 먼저 풀어 주세요');
+      const objNew = await CreateVault(strPw1);
+      const nCount = await ReencryptAll(objNew.objMeta, objNew.objKey, bEnable ? '가계부 암호화 적용' : '가계부 암호 변경');
+      await ForgetKeys();
+      g_objStore.Reset();
+      Q('#encPw1').value = '';
+      Q('#encPw2').value = '';
+      RenderEncSection();
+      RenderHeader();
+      Toast(bEnable ? `${nCount}개월 내역을 암호화했어요` : `${nCount}개월 내역을 새 암호로 바꿨어요`);
+      Load(true);
+    } catch (e) {
+      console.error('암호화 설정 실패', e);
+      SetEncStatus(e.message, true);
+    } finally {
+      elBtn.disabled = false;
+    }
+  });
+
+  function ShowLock() {
+    CloseSheet();
+    const elLock = Q('#lock');
+    if (elLock.classList.contains('on')) return;
+    g_objEl.elPane.innerHTML = '';
+    elLock.classList.add('on');
+    Q('#lockErr').textContent = '';
+    RenderHeader();
+    setTimeout(() => Q('#lockPw').focus(), 50);
+  }
+  function HideLock() { Q('#lock').classList.remove('on'); RenderHeader(); }
+
+  /** 다른 기기에서 암호를 켜거나 바꾼 것을 감지했을 때 */
+  function OnVaultChanged() {
+    g_objStore.Reset();
+    TryRememberedKey().then(() => {
+      if (IsLocked()) { ShowLock(); return; }
+      HideLock();
+      RenderPane();
+      Load(true);
+    });
+  }
+
+  Q('#lockForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const strPw = Q('#lockPw').value;
+    const elErr = Q('#lockErr');
+    const elBtn = Q('#lockOpen');
+    if (!strPw) { Q('#lockPw').focus(); return; }
+    elBtn.disabled = true;
+    elErr.textContent = '';
+    elBtn.textContent = '확인 중…';
+    try {
+      if (!g_objVault.bChecked && HasRepo()) {
+        try { if (await EnsureVault()) g_objStore.Reset(); } catch (er) { console.warn('암호 설정 확인 실패, 이 기기에 저장된 설정으로 진행', er); }
+      }
+      if (!g_objVault.objMeta) { HideLock(); RenderPane(); Load(true); return; }
+      const objKey = await DeriveKey(strPw, g_objVault.objMeta);
+      if (!await VerifyKey(objKey, g_objVault.objMeta)) {
+        elErr.textContent = '암호가 맞지 않아요';
+        const elCard = Q('#lockForm');
+        elCard.classList.remove('shake');
+        void elCard.offsetWidth;
+        elCard.classList.add('shake');
+        Q('#lockPw').select();
+        return;
+      }
+      g_objVault.objKey = objKey;
+      if (Q('#lockRemember').checked) {
+        try { await RememberKey(objKey); } catch (er) { console.warn('키 기억 실패', er); Toast('이 브라우저에서는 기억하기를 쓸 수 없어요'); }
+      }
+      Q('#lockPw').value = '';
+      HideLock();
+      await g_objStore.DecryptCached();
+      g_objState.bLoading = !g_objStore.Known(g_objState.strMonth);
+      RenderPane();
+      Load(true);
+    } catch (er) {
+      console.error('잠금 해제 실패', er);
+      elErr.textContent = er.message;
+    } finally {
+      elBtn.disabled = false;
+      elBtn.textContent = '열기';
+    }
+  });
+
+  Q('#btnLock').addEventListener('click', async () => {
+    g_objVault.objKey = null;
+    await ForgetKeys();
+    g_objStore.mapMonths.clear();
+    g_objStore.mapRaw.clear();
+    g_objStore.setFresh.clear();
+    g_objStore.Hydrate();
+    ShowLock();
+  });
 
   Q('#ghSave').addEventListener('click', async () => {
     const elBtn = Q('#ghSave');
@@ -964,9 +1369,9 @@ button.hero-cell:active{transform:scale(.98)}
     g_objConfig.path = CleanPath(Q('#ghPath').value);
     if (strToken) { g_objConfig.token = strToken; g_objConfig.bSharedToken = false; }
     SaveConfig(true);
-    if (g_objStore.strRepo !== RepoKey()) g_objStore.Reset();
+    if (g_objStore.strRepo !== RepoKey()) { LoadVaultCache(); g_objStore.Reset(); }
     if (!HasRepo()) { SetGhStatus('소유자와 저장소를 입력하세요', true); return; }
-    if (!g_objConfig.token) { SetGhStatus('토큰 없이 읽기 전용으로 저장했어요', true); RenderHeader(); Load(true); return; }
+    if (!g_objConfig.token) { SetGhStatus('토큰 없이 읽기 전용으로 저장했어요', true); RenderHeader(); RefreshAfterConnect(); return; }
     elBtn.disabled = true;
     SetGhStatus('연결 확인 중…', false);
     try {
@@ -980,7 +1385,8 @@ button.hero-cell:active{transform:scale(.98)}
       Toast('GitHub에 연결했어요');
       g_objStore.setFresh.clear();
       RenderHeader();
-      Load(true);
+      RenderEncSection();
+      RefreshAfterConnect();
     } catch (e) {
       console.error('연결 확인 실패', e);
       SetGhStatus(e.message, true);
@@ -988,6 +1394,10 @@ button.hero-cell:active{transform:scale(.98)}
       elBtn.disabled = false;
     }
   });
+
+  function RefreshAfterConnect() {
+    EnsureVault().catch((e) => { console.warn('암호 설정 확인 실패', e); return false; }).then((bChanged) => { if (bChanged) OnVaultChanged(); else Load(true); });
+  }
 
   Q('#ghClear').addEventListener('click', () => {
     if (!g_objConfig.token) return;
@@ -1091,11 +1501,21 @@ button.hero-cell:active{transform:scale(.98)}
   })();
 
   /* ================= 시작 ================= */
-  LoadConfig();
-  g_objStore.Hydrate();
-  g_objState.bLoading = HasRepo() && !g_objStore.Known(g_objState.strMonth);
-  RenderPane();
-  Load(false);
+  async function Start() {
+    LoadConfig();
+    LoadVaultCache();
+    g_objStore.Hydrate();
+    if (g_objVault.objMeta) await TryRememberedKey();
+    if (IsLocked()) ShowLock();
+    else await g_objStore.DecryptCached();
+    g_objState.bLoading = HasRepo() && !IsLocked() && !g_objStore.Known(g_objState.strMonth);
+    if (!IsLocked()) RenderPane();
+    if (HasRepo()) {
+      try { if (await EnsureVault()) { OnVaultChanged(); return; } } catch (e) { console.warn('암호 설정 확인 실패, 이 기기에 저장된 설정으로 진행', e); }
+    }
+    Load(false);
+  }
+  Start();
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && !g_nPending) Load(false); });
   window.addEventListener('storage', (e) => { if (e.key === g_objKeys.strShared || e.key === g_objKeys.strConfig) { LoadConfig(); RenderHeader(); } });
 })();
