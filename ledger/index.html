@@ -196,6 +196,24 @@ button.hero-cell:active{transform:scale(.98)}
 #toast{position:fixed;left:50%;bottom:calc(28px + env(safe-area-inset-bottom));z-index:60;transform:translate(-50%,20px);max-width:calc(100% - 40px);
   padding:12px 18px;border-radius:16px;background:var(--text);color:var(--bg);font-size:14px;font-weight:650;opacity:0;pointer-events:none;transition:.25s;word-break:keep-all;text-align:center}
 #toast.on{opacity:1;transform:translate(-50%,0)}
+/* 은행 목록 편집 */
+.bank-list{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
+.bank-row{display:flex;align-items:center;gap:6px;padding:6px 6px 6px 8px;border-radius:16px;background:var(--bg);border:1.5px solid var(--line)}
+.bank-row:focus-within{border-color:var(--accent)}
+.bank-no{flex:0 0 26px;height:26px;border-radius:9px;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent);font-size:12px;font-weight:800}
+.bank-row input{flex:1;min-width:0;height:36px;padding:0 6px;border:0;background:transparent;font-size:16px;font-weight:650;outline:none}
+.bank-meta{flex-shrink:0;font-size:11px;font-weight:700;color:var(--muted);white-space:nowrap}
+.bank-btn{flex:0 0 32px;width:32px;height:32px;display:grid;place-items:center;border-radius:10px;color:var(--muted)}
+.bank-btn:active:not(:disabled){background:var(--glass)}
+.bank-btn:disabled{opacity:.25;cursor:default}
+.bank-btn svg{width:16px;height:16px}
+.bank-btn.del{color:var(--danger)}
+.bank-presets{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}
+.bank-presets button{height:30px;padding:0 11px;border-radius:15px;background:var(--surface-2);font-size:13px;font-weight:650;color:var(--text)}
+.bank-presets button:active{transform:scale(.96)}
+.bank-presets button::before{content:'+ ';color:var(--muted)}
+.bank-empty{padding:14px;border-radius:14px;border:1.5px dashed var(--line);color:var(--muted);font-size:13px;text-align:center}
+
 /* 잠금 화면 */
 .lock{position:fixed;inset:0;z-index:55;display:none;align-items:center;justify-content:center;padding:24px 20px calc(24px + env(safe-area-inset-bottom));background:var(--bg);overflow:hidden}
 .lock.on{display:flex}
@@ -305,9 +323,13 @@ button.hero-cell:active{transform:scale(.98)}
     <button class="btn primary" id="ghSave">저장 및 확인</button>
   </div>
 
-  <h3>계좌(열) 이름 · 이 달부터 적용</h3>
-  <div class="field-row" id="colNames"></div>
-  <button class="btn full" id="colSave">열 이름 저장</button>
+  <h3>은행(계좌) 목록 · 이 달부터 적용</h3>
+  <div class="bank-list" id="bankList"></div>
+  <div class="bank-presets" id="bankPresets"></div>
+  <div class="sheet-actions">
+    <button class="btn" id="bankAdd" type="button">직접 추가</button>
+    <button class="btn primary" id="bankSave" type="button">은행 목록 저장</button>
+  </div>
 
   <h3>내역 암호화</h3>
   <p class="set-note" id="encStatus"></p>
@@ -349,8 +371,12 @@ button.hero-cell:active{transform:scale(.98)}
   const g_nStaleMs = 60 * 1000;
   const g_nLookback = 12;
   const g_nMaxAmount = 9999999999999;
-  const g_arrColIds = ['c1', 'c2', 'c3', 'c4'];
-  const g_arrDefaultCols = ['기업 1', '기업 2', '기타 1', '기타 2'];
+  const g_arrDefaultCols = [['c1', '기업 1'], ['c2', '기업 2'], ['c3', '기타 1'], ['c4', '기타 2']];
+  const g_nMaxBanks = 12;
+  const g_nMaxBankName = 12;
+  const g_reColId = /^[A-Za-z0-9]{1,24}$/;
+  // 빠른 추가용 은행 이름 (직접 입력도 가능)
+  const g_arrBankPresets = ['기업', '국민', '신한', '우리', '하나', '농협', '카카오뱅크', '토스뱅크', '케이뱅크', 'SC제일', 'iM뱅크', '부산', '경남', '광주', '전북', '우체국', '새마을금고', '신협', '수협', '현금'];
 
   // 첨부 표의 색상 구분
   const g_objColors = {
@@ -439,16 +465,33 @@ button.hero-cell:active{transform:scale(.98)}
   function ReadJson(strKey) { try { return JSON.parse(g_objPref.Get(strKey) || 'null'); } catch { return null; } }
 
   /* ================= 데이터 정규화 ================= */
-  function DefaultColumns() { return g_arrColIds.map((strId, i) => ({ id: strId, name: g_arrDefaultCols[i] })); }
-  function EmptyAmounts() { const obj = {}; g_arrColIds.forEach((strId) => { obj[strId] = 0; }); return obj; }
+  function DefaultColumns() { return g_arrDefaultCols.map(([strId, strName]) => ({ id: strId, name: strName })); }
+  function EmptyAmounts(arrCols) { const obj = {}; arrCols.forEach((objCol) => { obj[objCol.id] = 0; }); return obj; }
+  const NewColId = () => `b${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 
-  function NormalizeItem(objRaw) {
+  /** 은행(열) 목록 정규화: id 형식·중복 검사, 최대 g_nMaxBanks개, 비면 기본 열 */
+  function NormalizeColumns(arrRaw) {
+    if (!Array.isArray(arrRaw)) return DefaultColumns();
+    const setIds = new Set();
+    const arrOut = [];
+    arrRaw.forEach((objCol) => {
+      if (!objCol || typeof objCol !== 'object' || arrOut.length >= g_nMaxBanks) return;
+      const strId = typeof objCol.id === 'string' && g_reColId.test(objCol.id) ? objCol.id : '';
+      if (!strId || setIds.has(strId)) return;
+      setIds.add(strId);
+      const strName = typeof objCol.name === 'string' ? objCol.name.trim().slice(0, g_nMaxBankName) : '';
+      arrOut.push({ id: strId, name: strName || `은행 ${arrOut.length + 1}` });
+    });
+    return arrOut.length ? arrOut : DefaultColumns();
+  }
+
+  function NormalizeItem(objRaw, arrCols) {
     if (!objRaw || typeof objRaw !== 'object') return null;
     const strName = typeof objRaw.name === 'string' ? objRaw.name.trim().slice(0, 30) : '';
     if (!strName) return null;
-    const objAmounts = EmptyAmounts();
+    const objAmounts = EmptyAmounts(arrCols);
     const objSrc = objRaw.amounts && typeof objRaw.amounts === 'object' ? objRaw.amounts : {};
-    g_arrColIds.forEach((strId) => { objAmounts[strId] = ToAmount(objSrc[strId]); });
+    arrCols.forEach((objCol) => { objAmounts[objCol.id] = ToAmount(objSrc[objCol.id]); });
     return {
       id: typeof objRaw.id === 'string' && objRaw.id ? objRaw.id.slice(0, 40) : NewId(),
       name: strName,
@@ -463,16 +506,10 @@ button.hero-cell:active{transform:scale(.98)}
     const objOut = { month: strMk, salary: 0, columns: DefaultColumns(), items: [] };
     if (!objRaw || typeof objRaw !== 'object') return objOut;
     objOut.salary = ToAmount(objRaw.salary);
-    if (Array.isArray(objRaw.columns)) {
-      objOut.columns = g_arrColIds.map((strId, i) => {
-        const objCol = objRaw.columns.find((c) => c && c.id === strId);
-        const strName = objCol && typeof objCol.name === 'string' ? objCol.name.trim().slice(0, 12) : '';
-        return { id: strId, name: strName || g_arrDefaultCols[i] };
-      });
-    }
+    objOut.columns = NormalizeColumns(objRaw.columns);
     const setIds = new Set();
     (Array.isArray(objRaw.items) ? objRaw.items : []).forEach((x) => {
-      const objItem = NormalizeItem(x);
+      const objItem = NormalizeItem(x, objOut.columns);
       if (!objItem) return;
       if (setIds.has(objItem.id)) objItem.id = NewId();
       setIds.add(objItem.id);
@@ -484,7 +521,7 @@ button.hero-cell:active{transform:scale(.98)}
 
   function DefaultMonth(strMk) {
     const objOut = NormalizeMonth(null, strMk);
-    objOut.items = g_arrDefaultItems.map(([strName, strColor], i) => ({ id: `d${Pad(i + 1)}`, name: strName, color: strColor, type: 'out', amounts: EmptyAmounts(), memo: '' }));
+    objOut.items = g_arrDefaultItems.map(([strName, strColor], i) => ({ id: `d${Pad(i + 1)}`, name: strName, color: strColor, type: 'out', amounts: EmptyAmounts(objOut.columns), memo: '' }));
     return objOut;
   }
 
@@ -494,20 +531,20 @@ button.hero-cell:active{transform:scale(.98)}
     objOut.month = strMk;
     objOut.salary = 0;
     delete objOut.updatedAt;
-    objOut.items.forEach((objItem) => { objItem.amounts = EmptyAmounts(); objItem.memo = ''; });
+    objOut.items.forEach((objItem) => { objItem.amounts = EmptyAmounts(objOut.columns); objItem.memo = ''; });
     return objOut;
   }
 
-  function ItemTotal(objItem) { return g_arrColIds.reduce((n, strId) => n + objItem.amounts[strId], 0); }
+  function ItemTotal(objItem) { return Object.values(objItem.amounts).reduce((n, v) => n + (Number(v) || 0), 0); }
 
   function Summarize(objMonth) {
     const objSum = { nOut: 0, nIn: 0, objCols: {} };
-    g_arrColIds.forEach((strId) => { objSum.objCols[strId] = 0; });
+    objMonth.columns.forEach((objCol) => { objSum.objCols[objCol.id] = 0; });
     objMonth.items.forEach((objItem) => {
       const nTotal = ItemTotal(objItem);
       if (objItem.type === 'in') { objSum.nIn += nTotal; return; }
       objSum.nOut += nTotal;
-      g_arrColIds.forEach((strId) => { objSum.objCols[strId] += objItem.amounts[strId]; });
+      objMonth.columns.forEach((objCol) => { objSum.objCols[objCol.id] += objItem.amounts[objCol.id] || 0; });
     });
     objSum.nBalance = objMonth.salary + objSum.nIn - objSum.nOut;
     return objSum;
@@ -1152,7 +1189,7 @@ button.hero-cell:active{transform:scale(.98)}
   Q('#itSave').addEventListener('click', () => {
     const strName = Q('#itName').value.trim().slice(0, 30);
     if (!strName) { Toast('항목 이름을 입력해 주세요'); Q('#itName').focus(); return; }
-    const objAmounts = EmptyAmounts();
+    const objAmounts = {};
     g_objItemSheet.arrInputs.forEach((elIn) => { objAmounts[elIn.dataset.col] = ParseInput(elIn.value); });
     const objPatch = { name: strName, type: g_objItemSheet.strType, color: g_objItemSheet.strColor, amounts: objAmounts, memo: Q('#itMemo').value.trim().slice(0, 100) };
     const strId = g_objItemSheet.strId;
@@ -1232,7 +1269,8 @@ button.hero-cell:active{transform:scale(.98)}
     if (!HasRepo()) SetGhStatus('저장소 정보를 입력하세요. github.io 주소로 접속하면 자동으로 채워져요.', true);
     else if (!g_objConfig.token) SetGhStatus('토큰이 없어 읽기 전용이에요. GitHub Pages에 배포된 내용을 보여줘요.', true);
     else SetGhStatus(`연결됨 · ${g_objConfig.owner}/${g_objConfig.repo} (${g_objConfig.branch}) · ${CleanPath(g_objConfig.path)}`, false);
-    Q('#colNames').innerHTML = g_objState.objView.columns.map((objCol, i) => `<label class="field"><span>${i + 1}번째 열</span><input type="text" maxlength="12" data-col="${objCol.id}" value="${Esc(objCol.name)}" autocomplete="off"></label>`).join('');
+    g_arrBankDraft = Clone(g_objState.objView.columns);
+    RenderBankList();
     RenderEncSection();
     OpenSheet(Q('#settingsSheet'));
   }
@@ -1412,11 +1450,93 @@ button.hero-cell:active{transform:scale(.98)}
     Load(true);
   });
 
-  Q('#colSave').addEventListener('click', () => {
-    const arrNames = [...Q('#colNames').querySelectorAll('input')].map((elIn) => ({ id: elIn.dataset.col, name: elIn.value.trim().slice(0, 12) }));
-    if (arrNames.some((x) => !x.name)) { Toast('열 이름을 비울 수 없어요'); return; }
+  /* ================= 은행(열) 목록 편집 ================= */
+  let g_arrBankDraft = [];
+  const g_strIconUp = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"/></svg>';
+  const g_strIconDown = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
+  const g_strIconDel = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+
+  /** 이 달에서 해당 은행 열에 입력된 지출·수입 합계 */
+  function BankUsage(strId) {
+    return g_objState.objView.items.reduce((n, objItem) => n + (objItem.amounts[strId] || 0), 0);
+  }
+
+  function RenderBankList() {
+    const nLen = g_arrBankDraft.length;
+    Q('#bankList').innerHTML = nLen ? g_arrBankDraft.map((objCol, i) => {
+      const nUsed = BankUsage(objCol.id);
+      return `<div class="bank-row" data-i="${i}">
+        <span class="bank-no">${i + 1}</span>
+        <input type="text" maxlength="${g_nMaxBankName}" value="${Esc(objCol.name)}" placeholder="은행 이름" autocomplete="off" aria-label="${i + 1}번째 은행 이름">
+        ${nUsed ? `<span class="bank-meta num">${Won(nUsed)}</span>` : ''}
+        <button type="button" class="bank-btn" data-bank="up" aria-label="위로"${i === 0 ? ' disabled' : ''}>${g_strIconUp}</button>
+        <button type="button" class="bank-btn" data-bank="down" aria-label="아래로"${i === nLen - 1 ? ' disabled' : ''}>${g_strIconDown}</button>
+        <button type="button" class="bank-btn del" data-bank="del" aria-label="삭제"${nLen <= 1 ? ' disabled' : ''}>${g_strIconDel}</button>
+      </div>`;
+    }).join('') : '<div class="bank-empty">은행을 하나 이상 추가하세요</div>';
+    RenderBankPresets();
+  }
+
+  function RenderBankPresets() {
+    const nLen = g_arrBankDraft.length;
+    const setNames = new Set(g_arrBankDraft.map((x) => x.name.trim()));
+    Q('#bankPresets').innerHTML = g_arrBankPresets.filter((strName) => !setNames.has(strName)).map((strName) => `<button type="button" data-preset="${Esc(strName)}">${Esc(strName)}</button>`).join('');
+    Q('#bankAdd').disabled = nLen >= g_nMaxBanks;
+    Q('#bankPresets').style.display = nLen >= g_nMaxBanks ? 'none' : '';
+  }
+
+  function AddBank(strName) {
+    if (g_arrBankDraft.length >= g_nMaxBanks) { Toast(`은행은 최대 ${g_nMaxBanks}개까지 추가할 수 있어요`); return; }
+    g_arrBankDraft.push({ id: NewColId(), name: strName });
+    RenderBankList();
+    const arrInputs = Q('#bankList').querySelectorAll('input');
+    const elLast = arrInputs[arrInputs.length - 1];
+    if (elLast) { elLast.scrollIntoView({ block: 'nearest' }); if (!strName) elLast.focus(); }
+  }
+
+  Q('#bankList').addEventListener('input', (e) => {
+    const elRow = e.target.closest('.bank-row');
+    if (!elRow || e.target.tagName !== 'INPUT') return;
+    g_arrBankDraft[Number(elRow.dataset.i)].name = e.target.value;
+  });
+  // 포커스가 빠질 때 목록 전체를 다시 그리면 같은 순간 누른 버튼 클릭이 사라지므로 칩만 갱신
+  Q('#bankList').addEventListener('change', () => RenderBankPresets());
+  Q('#bankList').addEventListener('click', (e) => {
+    const elBtn = e.target.closest('[data-bank]');
+    if (!elBtn || elBtn.disabled) return;
+    const i = Number(elBtn.closest('.bank-row').dataset.i);
+    const strAct = elBtn.dataset.bank;
+    if (strAct === 'up' || strAct === 'down') {
+      const j = strAct === 'up' ? i - 1 : i + 1;
+      [g_arrBankDraft[i], g_arrBankDraft[j]] = [g_arrBankDraft[j], g_arrBankDraft[i]];
+    } else if (strAct === 'del') {
+      const objCol = g_arrBankDraft[i];
+      const nUsed = BankUsage(objCol.id);
+      if (nUsed && !confirm(`'${objCol.name || '이름 없음'}'에 이 달 금액 ${Won(nUsed)}원이 입력돼 있어요.\n저장하면 이 금액도 함께 지워져요. 목록에서 뺄까요?`)) return;
+      g_arrBankDraft.splice(i, 1);
+    }
+    RenderBankList();
+  });
+  Q('#bankPresets').addEventListener('click', (e) => { const elB = e.target.closest('[data-preset]'); if (elB) AddBank(elB.dataset.preset); });
+  Q('#bankAdd').addEventListener('click', () => AddBank(''));
+
+  Q('#bankSave').addEventListener('click', () => {
+    const arrCols = g_arrBankDraft.map((x) => ({ id: x.id, name: x.name.trim().slice(0, g_nMaxBankName) }));
+    if (!arrCols.length) { Toast('은행을 하나 이상 추가하세요'); return; }
+    const nEmpty = arrCols.findIndex((x) => !x.name);
+    if (nEmpty >= 0) { Toast(`${nEmpty + 1}번째 은행 이름을 입력하세요`); Q('#bankList').querySelectorAll('input')[nEmpty].focus(); return; }
+    const arrNames = arrCols.map((x) => x.name);
+    const strDup = arrNames.find((x, i) => arrNames.indexOf(x) !== i);
+    if (strDup) { Toast(`'${strDup}' 이름이 중복돼요. 예: ${strDup} 1, ${strDup} 2`); return; }
+    const arrBefore = g_objState.objView.columns;
+    if (JSON.stringify(arrBefore) === JSON.stringify(arrCols)) { CloseSheet(); return; }
+    const setKeep = new Set(arrCols.map((x) => x.id));
+    const arrRemoved = arrBefore.filter((x) => !setKeep.has(x.id));
+    const nAdded = arrCols.filter((x) => !arrBefore.some((y) => y.id === x.id)).length;
+    const strSummary = [nAdded ? `${nAdded}개 추가` : '', arrRemoved.length ? `${arrRemoved.map((x) => x.name).join(', ')} 삭제` : ''].filter(Boolean).join(', ') || '이름·순서 변경';
     CloseSheet();
-    Commit((objD) => { objD.columns = arrNames; }, `열 이름 변경 (${arrNames.map((x) => x.name).join(', ')})`);
+    // 삭제된 은행의 금액은 NormalizeMonth에서 함께 제거됨
+    Commit((objD) => { objD.columns = arrCols; }, `은행 목록 변경 (${strSummary})`);
   });
 
   /* ================= 화면 이벤트 ================= */
