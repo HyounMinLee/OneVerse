@@ -1,0 +1,1102 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f5f5f2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#111214" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="월 지출">
+<title>월 지출</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+:root{
+  --bg:#f5f5f2; --surface:#ffffff; --surface-2:#eeeee9; --text:#18191b; --muted:#7b7e85; --faint:#b6b8bd; --line:#e6e6e1;
+  --accent:#2c6e63; --accent-ink:#ffffff; --accent-soft:#e2efeb;
+  --sun:#d4553f; --sat:#3f6fd4; --danger:#d4553f; --plus:#2f8a5b;
+  --glass:rgba(20,20,20,.05); --glass-2:rgba(20,20,20,.03);
+  --shadow:0 1px 2px rgba(20,20,20,.04),0 10px 28px rgba(20,20,20,.06);
+  --sans:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  color-scheme:light dark;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#111214; --surface:#1a1b1e; --surface-2:#25262a; --text:#f2f1ec; --muted:#9d9ba3; --faint:#55565c; --line:#2d2e33;
+    --accent:#6cc3b2; --accent-ink:#0e1d1a; --accent-soft:#1d332f;
+    --sun:#ef7a66; --sat:#7ea2ef; --danger:#ef7a66; --plus:#7fd3a4;
+    --glass:rgba(255,255,255,.07); --glass-2:rgba(255,255,255,.05);
+    --shadow:0 1px 2px rgba(0,0,0,.35),0 12px 32px rgba(0,0,0,.28);
+  }
+}
+/* 월별 팔레트: body style에 --pa/--pb/--pacc(라이트), --pda/--pdb/--pdacc(다크) */
+body{--ga:var(--pa);--gb:var(--pb);--gacc:var(--pacc)}
+@media (prefers-color-scheme: dark){body{--ga:var(--pda);--gb:var(--pdb);--gacc:var(--pdacc)}}
+
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{background:var(--bg)}
+body{margin:0;color:var(--text);font-family:var(--sans);font-size:16px;line-height:1.5;letter-spacing:-.01em;overscroll-behavior-x:none;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+input{font:inherit;color:inherit}
+svg{display:block}
+.num{font-variant-numeric:tabular-nums}
+
+/* 배경 그래픽 */
+.blob{position:fixed;z-index:-1;border-radius:50%;pointer-events:none;filter:blur(64px);transition:background-color .9s ease}
+.blob.b1{width:85vw;height:85vw;max-width:560px;max-height:560px;top:-34vw;right:-28vw;background-color:var(--gb);opacity:.75}
+.blob.b2{width:65vw;height:65vw;max-width:420px;max-height:420px;top:30vh;left:-38vw;background-color:var(--ga);opacity:.6}
+@media (min-width:600px){.blob.b1{top:-240px;right:calc(50% - 560px)}.blob.b2{left:calc(50% - 560px)}}
+@media (prefers-color-scheme: dark){.blob.b1{opacity:.55}.blob.b2{opacity:.4}}
+
+.app{max-width:560px;margin:0 auto;padding:0 16px calc(48px + env(safe-area-inset-bottom))}
+
+/* 상단 */
+.brand-row{display:flex;align-items:center;justify-content:space-between;padding:calc(14px + env(safe-area-inset-top)) 4px 0}
+.brand{display:flex;align-items:center;gap:9px;font-size:15px;font-weight:750;letter-spacing:-.02em}
+.brand svg{width:28px;height:28px;border-radius:8px;box-shadow:0 4px 10px rgba(47,115,102,.25)}
+.top-actions{display:flex;align-items:center;gap:4px}
+.icon-btn{position:relative;width:40px;height:40px;display:grid;place-items:center;border-radius:14px;color:var(--text)}
+.icon-btn:active{background:var(--glass)}
+.icon-btn svg{width:22px;height:22px}
+.icon-btn .dot{position:absolute;top:8px;right:8px;width:8px;height:8px;border-radius:50%;background:var(--danger);display:none}
+.icon-btn .dot.on{display:block}
+
+.sync{display:none;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:12px;background:var(--glass);font-size:12px;font-weight:650;color:var(--muted)}
+.sync.on{display:inline-flex}
+.sync i{width:10px;height:10px;border-radius:50%;border:2px solid currentColor;border-right-color:transparent;animation:spin .8s linear infinite}
+.sync.err{color:var(--danger)}
+.sync.err i{animation:none;border-color:currentColor}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.month-nav{position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-content:space-between;margin:0 -16px;padding:calc(8px + env(safe-area-inset-top)) 12px 10px;
+  background:color-mix(in srgb,var(--bg) 72%,transparent);-webkit-backdrop-filter:blur(18px) saturate(1.4);backdrop-filter:blur(18px) saturate(1.4)}
+.mn-title{display:flex;flex-direction:column;align-items:center;gap:0}
+.mn-title b{font-size:28px;font-weight:800;letter-spacing:-.04em;line-height:1.15}
+.mn-title span{font-size:12px;font-weight:650;color:var(--muted)}
+.mn-title .today-link{color:var(--gacc)}
+.nav-btn{width:44px;height:44px;display:grid;place-items:center;border-radius:16px;background:var(--glass)}
+.nav-btn:active{transform:scale(.94)}
+.nav-btn svg{width:20px;height:20px}
+
+/* 스와이프 영역 */
+.viewport{overflow:hidden;touch-action:pan-y;margin:0 -16px;padding:0 16px}
+.pane{will-change:transform}
+.pane.anim{transition:transform .24s cubic-bezier(.2,.8,.2,1),opacity .24s ease}
+.swipe-hint{display:flex;justify-content:center;gap:5px;margin:2px 0 12px}
+.swipe-hint i{width:5px;height:5px;border-radius:50%;background:var(--faint);opacity:.6}
+.swipe-hint i.on{width:16px;border-radius:3px;background:var(--gacc);opacity:1}
+
+/* 요약 카드 */
+.hero{position:relative;overflow:hidden;padding:22px 22px 18px;border-radius:30px;background:linear-gradient(150deg,var(--ga),var(--gb));box-shadow:var(--shadow)}
+.hero::after{content:'';position:absolute;right:-40px;top:-50px;width:170px;height:170px;border-radius:50%;background:rgba(255,255,255,.22)}
+@media (prefers-color-scheme: dark){.hero::after{background:rgba(255,255,255,.05)}}
+.hero-label{position:relative;z-index:1;margin:0;font-size:13px;font-weight:700;color:var(--gacc)}
+.hero-amount{position:relative;z-index:1;margin:2px 0 0;font-size:36px;font-weight:850;letter-spacing:-.045em;line-height:1.15}
+.hero-amount small{font-size:20px;font-weight:750;margin-left:2px}
+.hero-amount.minus{color:var(--danger)}
+.bar{position:relative;z-index:1;height:8px;margin:16px 0 14px;border-radius:4px;background:rgba(255,255,255,.55);overflow:hidden}
+@media (prefers-color-scheme: dark){.bar{background:rgba(255,255,255,.1)}}
+.bar i{display:block;height:100%;border-radius:4px;background:var(--gacc);transition:width .6s cubic-bezier(.2,.8,.2,1)}
+.bar i.over{background:var(--danger)}
+.hero-grid{position:relative;z-index:1;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.hero-cell{padding:10px 12px;border-radius:16px;background:rgba(255,255,255,.55);text-align:left}
+@media (prefers-color-scheme: dark){.hero-cell{background:rgba(255,255,255,.07)}}
+.hero-cell:nth-child(3){grid-column:span 2}
+button.hero-cell:active{transform:scale(.98)}
+.hero-cell span{display:flex;align-items:center;gap:4px;font-size:12px;font-weight:650;color:var(--muted)}
+.hero-cell span svg{width:12px;height:12px}
+.hero-cell b{display:block;font-size:17px;font-weight:800;letter-spacing:-.03em}
+.hero-cell.empty b{color:var(--faint)}
+
+/* 계좌(열)별 합계 */
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0 4px}
+.col-chip{display:flex;align-items:baseline;justify-content:space-between;gap:8px;padding:12px 14px;border-radius:18px;background:var(--surface);box-shadow:var(--shadow);min-width:0}
+.col-chip span{font-size:12px;font-weight:700;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.col-chip b{flex-shrink:0;font-size:15px;font-weight:800;letter-spacing:-.03em;white-space:nowrap}
+.col-chip.zero b{color:var(--faint)}
+
+.notice{display:flex;align-items:center;gap:10px;margin:14px 0 0;padding:12px 14px;border-radius:18px;background:var(--glass);font-size:13px;line-height:1.5;color:var(--muted);word-break:keep-all}
+.notice b{color:var(--text)}
+.notice .btn{margin-left:auto;flex-shrink:0}
+
+/* 항목 그룹 */
+.groups{display:flex;flex-direction:column;gap:10px;margin-top:14px}
+.group{position:relative;overflow:hidden;border-radius:22px;background:color-mix(in srgb,var(--ic) 13%,var(--surface));box-shadow:var(--shadow)}
+.group::before{content:'';position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--ic)}
+.row{display:flex;align-items:center;gap:10px;width:100%;min-height:56px;padding:10px 16px 10px 20px;text-align:left}
+.row + .row{border-top:1px solid color-mix(in srgb,var(--ic) 22%,transparent)}
+.row:active{background:var(--glass)}
+.row-main{flex:1;min-width:0}
+.row-name{display:flex;align-items:center;gap:6px;font-size:15px;font-weight:700;letter-spacing:-.02em}
+.row-name .tag{padding:1px 6px;border-radius:6px;background:color-mix(in srgb,var(--plus) 16%,transparent);color:var(--plus);font-size:11px;font-weight:750}
+.row-name .memo-dot{width:5px;height:5px;border-radius:50%;background:var(--muted)}
+.row-sub{margin-top:1px;font-size:12px;font-weight:550;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row-amt{flex-shrink:0;font-size:16px;font-weight:800;letter-spacing:-.03em}
+.row-amt.zero{color:var(--faint);font-weight:650}
+.row-amt.plus{color:var(--plus)}
+
+.add-row{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;height:52px;margin-top:10px;border-radius:20px;border:1.5px dashed var(--line);color:var(--muted);font-size:14px;font-weight:700}
+.add-row svg{width:18px;height:18px}
+.add-row:active{background:var(--glass)}
+
+.foot-total{display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding:16px 20px;border-radius:22px;background:var(--surface);box-shadow:var(--shadow)}
+.foot-total span{font-size:13px;font-weight:700;color:var(--muted)}
+.foot-total b{font-size:18px;font-weight:850;letter-spacing:-.03em}
+
+/* 로딩 */
+.skeleton{padding:24px;border-radius:30px;background:var(--surface);box-shadow:var(--shadow)}
+.sk-line{display:block;height:14px;border-radius:7px;background:var(--surface-2);margin:12px 0;animation:pulse 1.2s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.45}}
+
+/* 버튼 */
+.btn{height:46px;padding:0 18px;border-radius:15px;font-size:15px;font-weight:750;letter-spacing:-.02em;background:var(--surface-2);color:var(--text)}
+.btn.sm{height:34px;padding:0 12px;border-radius:11px;font-size:13px}
+.btn.primary{background:var(--accent);color:var(--accent-ink)}
+.btn.danger{color:var(--danger);background:color-mix(in srgb,var(--danger) 12%,transparent)}
+.btn.full{width:100%}
+.btn:disabled{opacity:.45;cursor:default}
+.btn:active:not(:disabled){transform:scale(.98)}
+
+/* 시트 */
+.backdrop{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.36);opacity:0;pointer-events:none;transition:opacity .25s}
+.backdrop.on{opacity:1;pointer-events:auto}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:50;max-width:560px;max-height:92vh;margin:0 auto;overflow-y:auto;overscroll-behavior:contain;
+  padding:10px 20px calc(20px + env(safe-area-inset-bottom));border-radius:28px 28px 0 0;background:var(--surface);
+  transform:translateY(105%);transition:transform .3s cubic-bezier(.2,.8,.2,1);visibility:hidden}
+.sheet.on{transform:none;visibility:visible}
+.grip{width:38px;height:5px;margin:0 auto 14px;border-radius:3px;background:var(--line)}
+.sheet h2{margin:0 0 14px;font-size:20px;font-weight:800;letter-spacing:-.03em}
+.sheet h3{margin:20px 0 10px;font-size:14px;font-weight:750;color:var(--muted)}
+.field{display:block;margin-bottom:12px}
+.field > span{display:block;margin:0 2px 6px;font-size:13px;font-weight:700;color:var(--muted)}
+.field input{width:100%;height:48px;padding:0 14px;border:1.5px solid var(--line);border-radius:14px;background:var(--bg);font-size:16px;outline:none}
+.field input:focus{border-color:var(--accent)}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.money{position:relative}
+.money input{padding-right:34px;text-align:right;font-weight:750;font-variant-numeric:tabular-nums}
+.money::after{content:'원';position:absolute;right:14px;bottom:13px;font-size:14px;font-weight:650;color:var(--muted)}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;margin-bottom:12px;border-radius:14px;background:var(--surface-2)}
+.seg button{height:38px;border-radius:11px;font-size:14px;font-weight:700;color:var(--muted)}
+.seg button.on{background:var(--surface);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.swatches{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px}
+.swatch{width:34px;height:34px;border-radius:12px;background:var(--sw);box-shadow:inset 0 0 0 1px rgba(0,0,0,.06)}
+.swatch.on{box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--text)}
+.sheet-total{display:flex;justify-content:space-between;margin:2px 2px 14px;font-size:14px;font-weight:700;color:var(--muted)}
+.sheet-total b{color:var(--text);font-size:16px}
+.sheet-actions{display:flex;gap:8px;margin-top:6px}
+.sheet-actions .btn.primary{flex:1}
+.tools{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.set-note{margin:0 0 14px;padding:12px 14px;border-radius:14px;background:var(--accent-soft);color:var(--accent);font-size:13px;font-weight:600;line-height:1.5;word-break:keep-all}
+.set-note.warn{background:color-mix(in srgb,var(--danger) 14%,transparent);color:var(--danger)}
+.set-help{margin:-4px 2px 16px;font-size:12px;line-height:1.6;color:var(--muted);word-break:keep-all}
+
+#toast{position:fixed;left:50%;bottom:calc(28px + env(safe-area-inset-bottom));z-index:60;transform:translate(-50%,20px);max-width:calc(100% - 40px);
+  padding:12px 18px;border-radius:16px;background:var(--text);color:var(--bg);font-size:14px;font-weight:650;opacity:0;pointer-events:none;transition:.25s;word-break:keep-all;text-align:center}
+#toast.on{opacity:1;transform:translate(-50%,0)}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="blob b1"></div><div class="blob b2"></div>
+
+<div class="app">
+  <div class="brand-row">
+    <div class="brand">
+      <svg viewBox="0 0 28 28" aria-hidden="true"><rect width="28" height="28" rx="8" fill="#2c6e63"/><rect x="6" y="8" width="16" height="12" rx="3" fill="none" stroke="#fff" stroke-width="2"/><path d="M6 12h16" stroke="#fff" stroke-width="2"/><circle cx="18" cy="16.5" r="1.4" fill="#fff"/></svg>
+      월 지출
+    </div>
+    <div class="top-actions">
+      <span class="sync" id="sync"><i></i><em id="syncText" style="font-style:normal">저장 중</em></span>
+      <button class="icon-btn" id="btnSettings" aria-label="설정">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+        <i class="dot" id="settingsDot"></i>
+      </button>
+    </div>
+  </div>
+
+  <nav class="month-nav">
+    <button class="nav-btn" id="btnPrev" aria-label="이전 달"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
+    <button class="mn-title" id="btnToday" aria-label="이번 달로 이동"><b class="num" id="monthTitle"></b><span id="monthSub"></span></button>
+    <button class="nav-btn" id="btnNext" aria-label="다음 달"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
+  </nav>
+
+  <div class="viewport" id="viewport">
+    <div class="pane" id="pane"></div>
+  </div>
+</div>
+
+<div class="backdrop" id="backdrop"></div>
+
+<!-- 항목 편집 -->
+<section class="sheet" id="itemSheet" role="dialog" aria-modal="true" aria-labelledby="itemTitle">
+  <div class="grip"></div>
+  <h2 id="itemTitle">항목</h2>
+  <label class="field"><span>항목 이름</span><input type="text" id="itName" maxlength="30" autocomplete="off"></label>
+  <div class="seg" id="itType"><button type="button" data-type="out">지출</button><button type="button" data-type="in">수입</button></div>
+  <div class="field-row" id="itAmounts"></div>
+  <p class="sheet-total"><span>합계</span><b class="num" id="itTotal">0원</b></p>
+  <label class="field"><span>메모</span><input type="text" id="itMemo" maxlength="100" autocomplete="off" placeholder="선택 사항"></label>
+  <span class="field"><span style="display:block;margin:0 2px 8px;font-size:13px;font-weight:700;color:var(--muted)">색상</span></span>
+  <div class="swatches" id="itColors"></div>
+  <div class="sheet-actions">
+    <button class="btn" data-close>취소</button>
+    <button class="btn primary" id="itSave">저장</button>
+  </div>
+  <div class="tools" id="itTools">
+    <button class="btn sm" id="itUp">위로</button>
+    <button class="btn sm" id="itDown">아래로</button>
+    <button class="btn sm danger" id="itDelete" style="margin-left:auto">항목 삭제</button>
+  </div>
+</section>
+
+<!-- 급여 -->
+<section class="sheet" id="salarySheet" role="dialog" aria-modal="true" aria-labelledby="salaryTitle">
+  <div class="grip"></div>
+  <h2 id="salaryTitle">급여</h2>
+  <label class="field money"><span>이번 달 급여</span><input type="text" id="slAmount" inputmode="numeric" autocomplete="off"></label>
+  <div class="sheet-actions">
+    <button class="btn" data-close>취소</button>
+    <button class="btn primary" id="slSave">저장</button>
+  </div>
+</section>
+
+<!-- 설정 -->
+<section class="sheet" id="settingsSheet" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+  <div class="grip"></div>
+  <h2 id="settingsTitle">GitHub 연결</h2>
+  <p class="set-note" id="ghStatus"></p>
+  <div class="field-row">
+    <label class="field"><span>소유자 (owner)</span><input type="text" id="ghOwner" autocapitalize="off" autocomplete="off" spellcheck="false"></label>
+    <label class="field"><span>저장소 (repo)</span><input type="text" id="ghRepo" autocapitalize="off" autocomplete="off" spellcheck="false"></label>
+  </div>
+  <div class="field-row">
+    <label class="field"><span>브랜치</span><input type="text" id="ghBranch" placeholder="main" autocapitalize="off" autocomplete="off" spellcheck="false"></label>
+    <label class="field"><span>데이터 폴더</span><input type="text" id="ghPath" placeholder="ledger/data" autocapitalize="off" autocomplete="off" spellcheck="false"></label>
+  </div>
+  <label class="field"><span>개인 액세스 토큰</span><input type="password" id="ghToken" placeholder="github_pat_..." autocomplete="off" spellcheck="false"></label>
+  <p class="set-help" id="ghHelp"></p>
+  <div class="sheet-actions">
+    <button class="btn" id="ghClear">토큰 지우기</button>
+    <button class="btn primary" id="ghSave">저장 및 확인</button>
+  </div>
+
+  <h3>계좌(열) 이름 · 이 달부터 적용</h3>
+  <div class="field-row" id="colNames"></div>
+  <button class="btn full" id="colSave">열 이름 저장</button>
+</section>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(() => {
+  'use strict';
+
+  /* ================= 상수 ================= */
+  const g_objKeys = { strConfig: 'ledger.github', strShared: 'dailyVerse.github', strCache: 'ledger.cache.v1' };
+  const g_strApi = 'https://api.github.com';
+  const g_strDefaultPath = 'ledger/data';
+  const g_nStaleMs = 60 * 1000;
+  const g_nLookback = 12;
+  const g_nMaxAmount = 9999999999999;
+  const g_arrColIds = ['c1', 'c2', 'c3', 'c4'];
+  const g_arrDefaultCols = ['기업 1', '기업 2', '기타 1', '기타 2'];
+
+  // 첨부 표의 색상 구분
+  const g_objColors = {
+    yellow: { strName: '노랑', strHex: '#f0d43c' },
+    peach: { strName: '살구', strHex: '#f0b49b' },
+    green: { strName: '연두', strHex: '#8ad45e' },
+    orange: { strName: '주황', strHex: '#ec9f32' },
+    mint: { strName: '민트', strHex: '#5fd3bd' },
+    purple: { strName: '보라', strHex: '#c08cf0' },
+    gray: { strName: '회색', strHex: '#a9aab0' },
+    blue: { strName: '파랑', strHex: '#4fb0ee' },
+    sand: { strName: '모래', strHex: '#e9b45c' },
+  };
+
+  // 첨부 표(2026.09)의 항목 순서와 색상
+  const g_arrDefaultItems = [
+    ['십일조', 'yellow'], ['기타헌금', 'yellow'],
+    ['운전자보험', 'peach'], ['사랑밭', 'peach'], ['밀알', 'peach'], ['원바디', 'peach'],
+    ['청약', 'green'], ['종신보험', 'green'],
+    ['아동수당', 'yellow'],
+    ['이정.청약', 'orange'], ['이정.적금', 'orange'], ['이정.펀드', 'orange'], ['이정.휴대폰', 'orange'],
+    ['이준.보험', 'mint'], ['이준.적금', 'mint'], ['이준.청약', 'mint'], ['이준.펀드', 'mint'],
+    ['어머니', 'purple'], ['시댁계', 'purple'],
+    ['선영.생활비', 'blue'], ['선영.고정비', 'blue'],
+    ['적금', 'mint'],
+    ['우리카드', 'sand'], ['롯데카드', 'sand'], ['비씨카드', 'sand'], ['신한카드', 'sand'],
+    ['예비비', 'yellow'],
+    ['용돈', 'green'],
+  ];
+
+  // 월별 배경 팔레트 (라이트 a/b/acc, 다크 da/db/dacc)
+  const g_arrPalettes = [
+    { a: '#ffe6d0', b: '#ffcbb6', acc: '#b4563a', da: '#3b2620', db: '#2b1c1e', dacc: '#f2a184' },
+    { a: '#e3efd8', b: '#c8dfc4', acc: '#4a7a45', da: '#1f2c1f', db: '#1a2520', dacc: '#a5d39b' },
+    { a: '#dcebfb', b: '#c3d6f4', acc: '#3a62a6', da: '#1c2638', db: '#1a1f33', dacc: '#9dbcf0' },
+    { a: '#ebe3fb', b: '#d5caf3', acc: '#6a50b0', da: '#2a2238', db: '#221d33', dacc: '#c3b2f2' },
+    { a: '#f6ecd4', b: '#ebdab4', acc: '#8a6629', da: '#302a1d', db: '#28221a', dacc: '#e3c784' },
+    { a: '#fce3e9', b: '#f3c8d4', acc: '#a8456a', da: '#36202a', db: '#2c1b25', dacc: '#f0a0bd' },
+    { a: '#d6f0ed', b: '#bbe2dc', acc: '#2b7970', da: '#1a2f2d', db: '#172826', dacc: '#8ad5cb' },
+  ];
+
+  /* ================= 유틸 ================= */
+  const Q = (strSel) => document.querySelector(strSel);
+  const Pad = (n) => String(n).padStart(2, '0');
+  const MonthKeyOf = (dt) => `${dt.getFullYear()}-${Pad(dt.getMonth() + 1)}`;
+  const IsMonthKey = (str) => typeof str === 'string' && /^\d{4}-(0[1-9]|1[0-2])$/.test(str);
+  const AddMonth = (strMk, nDelta) => { const [nY, nM] = strMk.split('-').map(Number); return MonthKeyOf(new Date(nY, nM - 1 + nDelta, 1)); };
+  const CurrentMonthKey = () => MonthKeyOf(new Date());
+  const Won = (n) => `${Math.round(n).toLocaleString('ko-KR')}`;
+  const Esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const NewId = () => `i${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+  const Clone = (obj) => JSON.parse(JSON.stringify(obj));
+  const ToAmount = (v) => { const n = Math.round(Number(v)); return Number.isFinite(n) && n > 0 ? Math.min(n, g_nMaxAmount) : 0; };
+  const ParseInput = (str) => ToAmount(String(str).replace(/[^\d]/g, '').slice(0, 13));
+
+  function B64Encode(strText) {
+    const arrBytes = new TextEncoder().encode(strText);
+    let strBin = '';
+    for (let i = 0; i < arrBytes.length; i += 0x8000) strBin += String.fromCharCode.apply(null, arrBytes.subarray(i, i + 0x8000));
+    return btoa(strBin);
+  }
+  function B64Decode(strB64) {
+    const strBin = atob(String(strB64).replace(/\s/g, ''));
+    const arrBytes = new Uint8Array(strBin.length);
+    for (let i = 0; i < strBin.length; i++) arrBytes[i] = strBin.charCodeAt(i);
+    return new TextDecoder().decode(arrBytes);
+  }
+
+  /* ================= 브라우저 저장소 ================= */
+  const g_objLs = (() => { try { const s = window.localStorage; s.getItem('_'); return s; } catch { return null; } })();
+  const g_objPref = {
+    Get(strKey) { try { return g_objLs ? g_objLs.getItem(strKey) : null; } catch { return null; } },
+    Set(strKey, strVal) { try { if (g_objLs) g_objLs.setItem(strKey, strVal); } catch { /* 저장 실패는 무시 */ } },
+  };
+  function ReadJson(strKey) { try { return JSON.parse(g_objPref.Get(strKey) || 'null'); } catch { return null; } }
+
+  /* ================= 데이터 정규화 ================= */
+  function DefaultColumns() { return g_arrColIds.map((strId, i) => ({ id: strId, name: g_arrDefaultCols[i] })); }
+  function EmptyAmounts() { const obj = {}; g_arrColIds.forEach((strId) => { obj[strId] = 0; }); return obj; }
+
+  function NormalizeItem(objRaw) {
+    if (!objRaw || typeof objRaw !== 'object') return null;
+    const strName = typeof objRaw.name === 'string' ? objRaw.name.trim().slice(0, 30) : '';
+    if (!strName) return null;
+    const objAmounts = EmptyAmounts();
+    const objSrc = objRaw.amounts && typeof objRaw.amounts === 'object' ? objRaw.amounts : {};
+    g_arrColIds.forEach((strId) => { objAmounts[strId] = ToAmount(objSrc[strId]); });
+    return {
+      id: typeof objRaw.id === 'string' && objRaw.id ? objRaw.id.slice(0, 40) : NewId(),
+      name: strName,
+      color: g_objColors[objRaw.color] ? objRaw.color : 'gray',
+      type: objRaw.type === 'in' ? 'in' : 'out',
+      amounts: objAmounts,
+      memo: typeof objRaw.memo === 'string' ? objRaw.memo.trim().slice(0, 100) : '',
+    };
+  }
+
+  function NormalizeMonth(objRaw, strMk) {
+    const objOut = { month: strMk, salary: 0, columns: DefaultColumns(), items: [] };
+    if (!objRaw || typeof objRaw !== 'object') return objOut;
+    objOut.salary = ToAmount(objRaw.salary);
+    if (Array.isArray(objRaw.columns)) {
+      objOut.columns = g_arrColIds.map((strId, i) => {
+        const objCol = objRaw.columns.find((c) => c && c.id === strId);
+        const strName = objCol && typeof objCol.name === 'string' ? objCol.name.trim().slice(0, 12) : '';
+        return { id: strId, name: strName || g_arrDefaultCols[i] };
+      });
+    }
+    const setIds = new Set();
+    (Array.isArray(objRaw.items) ? objRaw.items : []).forEach((x) => {
+      const objItem = NormalizeItem(x);
+      if (!objItem) return;
+      if (setIds.has(objItem.id)) objItem.id = NewId();
+      setIds.add(objItem.id);
+      objOut.items.push(objItem);
+    });
+    if (typeof objRaw.updatedAt === 'string') objOut.updatedAt = objRaw.updatedAt;
+    return objOut;
+  }
+
+  function DefaultMonth(strMk) {
+    const objOut = NormalizeMonth(null, strMk);
+    objOut.items = g_arrDefaultItems.map(([strName, strColor], i) => ({ id: `d${Pad(i + 1)}`, name: strName, color: strColor, type: 'out', amounts: EmptyAmounts(), memo: '' }));
+    return objOut;
+  }
+
+  /** 다른 달의 구조(항목·열)만 복사하고 금액은 비운 새 달 */
+  function StructureFrom(objSrc, strMk) {
+    const objOut = Clone(objSrc);
+    objOut.month = strMk;
+    objOut.salary = 0;
+    delete objOut.updatedAt;
+    objOut.items.forEach((objItem) => { objItem.amounts = EmptyAmounts(); objItem.memo = ''; });
+    return objOut;
+  }
+
+  function ItemTotal(objItem) { return g_arrColIds.reduce((n, strId) => n + objItem.amounts[strId], 0); }
+
+  function Summarize(objMonth) {
+    const objSum = { nOut: 0, nIn: 0, objCols: {} };
+    g_arrColIds.forEach((strId) => { objSum.objCols[strId] = 0; });
+    objMonth.items.forEach((objItem) => {
+      const nTotal = ItemTotal(objItem);
+      if (objItem.type === 'in') { objSum.nIn += nTotal; return; }
+      objSum.nOut += nTotal;
+      g_arrColIds.forEach((strId) => { objSum.objCols[strId] += objItem.amounts[strId]; });
+    });
+    objSum.nBalance = objMonth.salary + objSum.nIn - objSum.nOut;
+    return objSum;
+  }
+
+  /* ================= GitHub 연결 정보 ================= */
+  function DetectRepo() {
+    const strHost = location.hostname;
+    if (!/\.github\.io$/i.test(strHost)) return { owner: '', repo: '' };
+    const strOwner = strHost.split('.')[0];
+    const strSeg = location.pathname.split('/').filter(Boolean)[0];
+    return { owner: strOwner, repo: strSeg && !strSeg.includes('.') ? strSeg : strHost };
+  }
+
+  const g_objConfig = { owner: '', repo: '', branch: 'main', path: g_strDefaultPath, token: '', bSharedToken: false };
+
+  /** 가계부 전용 설정이 없으면 성경 앱(같은 주소)의 연결 정보를 그대로 사용 */
+  function LoadConfig() {
+    const objDetected = DetectRepo();
+    const objShared = ReadJson(g_objKeys.strShared) || {};
+    const objOwn = ReadJson(g_objKeys.strConfig) || {};
+    g_objConfig.owner = objOwn.owner || objShared.owner || objDetected.owner;
+    g_objConfig.repo = objOwn.repo || objShared.repo || objDetected.repo;
+    g_objConfig.branch = objOwn.branch || objShared.branch || 'main';
+    g_objConfig.path = objOwn.path || g_strDefaultPath;
+    g_objConfig.bSharedToken = !objOwn.token && !!objShared.token;
+    g_objConfig.token = objOwn.token || objShared.token || '';
+  }
+
+  function SaveConfig(bWithToken) {
+    const objOwn = { owner: g_objConfig.owner, repo: g_objConfig.repo, branch: g_objConfig.branch, path: g_objConfig.path };
+    if (bWithToken && g_objConfig.token && !g_objConfig.bSharedToken) objOwn.token = g_objConfig.token;
+    g_objPref.Set(g_objKeys.strConfig, JSON.stringify(objOwn));
+  }
+
+  const CleanPath = (str) => String(str || g_strDefaultPath).trim().replace(/^\/+|\/+$/g, '') || g_strDefaultPath;
+  const HasRepo = () => !!(g_objConfig.owner && g_objConfig.repo);
+  const CanWrite = () => HasRepo() && !!g_objConfig.token;
+  const MonthFilePath = (strMk) => `${CleanPath(g_objConfig.path)}/${strMk.slice(0, 4)}/${strMk}.json`;
+  const ContentsUrl = (strPath) => `${g_strApi}/repos/${encodeURIComponent(g_objConfig.owner)}/${encodeURIComponent(g_objConfig.repo)}/contents/${strPath.split('/').map(encodeURIComponent).join('/')}`;
+  const RepoKey = () => `${g_objConfig.owner}/${g_objConfig.repo}@${g_objConfig.branch}:${CleanPath(g_objConfig.path)}`;
+
+  /** 토큰 없이 읽을 때 GitHub Pages에 배포된 파일 주소 */
+  function PagesUrl(strMk) {
+    const strHost = location.hostname;
+    let strRoot = new URL('../', location.href).pathname;
+    if (/\.github\.io$/i.test(strHost)) {
+      const strSeg = location.pathname.split('/').filter(Boolean)[0];
+      strRoot = strSeg && !strSeg.includes('.') && g_objConfig.repo === strSeg ? `/${strSeg}/` : '/';
+    }
+    return `${location.origin}${strRoot}${MonthFilePath(strMk)}?t=${Date.now()}`;
+  }
+
+  async function Gh(strMethod, strUrl, objBody) {
+    try {
+      return await fetch(strUrl, { method: strMethod, cache: 'no-store', headers: { Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28', Authorization: `Bearer ${g_objConfig.token}`, ...(objBody ? { 'Content-Type': 'application/json' } : {}) }, body: objBody ? JSON.stringify(objBody) : undefined });
+    } catch (e) {
+      throw new Error('네트워크에 연결할 수 없어요');
+    }
+  }
+
+  async function ApiError(objRes) {
+    let strMsg = '';
+    try { strMsg = (await objRes.json()).message || ''; } catch { /* 본문 없음 */ }
+    console.error(`GitHub API 오류 ${objRes.status}: ${strMsg}`);
+    if (objRes.status === 401) return new Error('토큰이 올바르지 않거나 만료됐어요');
+    if (objRes.status === 403 && objRes.headers.get('x-ratelimit-remaining') === '0') return new Error('GitHub 요청 한도를 초과했어요. 잠시 후 다시 시도하세요');
+    if (objRes.status === 403) return new Error('토큰에 이 저장소의 쓰기 권한이 없어요');
+    if (objRes.status === 404) return new Error('저장소나 브랜치를 찾을 수 없어요');
+    if (objRes.status === 409) return new Error('다른 곳에서 동시에 수정됐어요. 다시 시도해 주세요');
+    if (objRes.status === 422) return new Error('저장 요청이 거부됐어요. 잠시 후 다시 시도하세요');
+    return new Error(`GitHub 오류 (${objRes.status})`);
+  }
+
+  /* ================= 월 데이터 저장소 ================= */
+  const g_objStore = {
+    mapMonths: new Map(),   // 월 → { objData|null, strSha, nFetchedAt }
+    setFresh: new Set(),    // 이번 실행에서 원격 확인을 마친 월
+    mapInflight: new Map(),
+    strRepo: '',
+
+    Hydrate() {
+      const objCache = ReadJson(g_objKeys.strCache);
+      this.strRepo = RepoKey();
+      if (!objCache || objCache.repo !== this.strRepo || !objCache.months) return;
+      Object.entries(objCache.months).forEach(([strMk, objM]) => {
+        if (!IsMonthKey(strMk) || !objM) return;
+        this.mapMonths.set(strMk, { objData: objM.data ? NormalizeMonth(objM.data, strMk) : null, strSha: objM.sha || null, nFetchedAt: 0 });
+      });
+    },
+
+    Persist() {
+      const objMonths = {};
+      this.mapMonths.forEach((objM, strMk) => { objMonths[strMk] = { data: objM.objData, sha: objM.strSha }; });
+      g_objPref.Set(g_objKeys.strCache, JSON.stringify({ repo: RepoKey(), months: objMonths }));
+    },
+
+    Reset() { this.mapMonths.clear(); this.setFresh.clear(); this.strRepo = RepoKey(); this.Persist(); },
+
+    Put(strMk, strSha, objData) {
+      this.mapMonths.set(strMk, { objData, strSha, nFetchedAt: Date.now() });
+      this.setFresh.add(strMk);
+      this.Persist();
+    },
+
+    async FetchRemote(strMk) {
+      if (CanWrite()) {
+        const objRes = await Gh('GET', `${ContentsUrl(MonthFilePath(strMk))}?ref=${encodeURIComponent(g_objConfig.branch)}`);
+        if (objRes.status === 404) return { objData: null, strSha: null };
+        if (!objRes.ok) throw await ApiError(objRes);
+        const objJson = await objRes.json();
+        return { objData: NormalizeMonth(JSON.parse(B64Decode(objJson.content)), strMk), strSha: objJson.sha };
+      }
+      if (!HasRepo()) return { objData: null, strSha: null };
+      let objRes;
+      try { objRes = await fetch(PagesUrl(strMk), { cache: 'no-store' }); } catch { throw new Error('네트워크에 연결할 수 없어요'); }
+      if (objRes.status === 404) return { objData: null, strSha: null };
+      if (!objRes.ok) throw new Error(`데이터를 불러오지 못했어요 (${objRes.status})`);
+      return { objData: NormalizeMonth(await objRes.json(), strMk), strSha: null };
+    },
+
+    /** 오래된 월만 원격에서 다시 읽음. 내용이 바뀌면 true */
+    async Ensure(strMk, bForce) {
+      const objCur = this.mapMonths.get(strMk);
+      if (!bForce && objCur && this.setFresh.has(strMk) && Date.now() - objCur.nFetchedAt < g_nStaleMs) return false;
+      if (!this.mapInflight.has(strMk)) {
+        const strBefore = JSON.stringify(objCur ? objCur.objData : undefined);
+        const objPromise = this.FetchRemote(strMk).then((objR) => { this.Put(strMk, objR.strSha, objR.objData); return JSON.stringify(objR.objData) !== strBefore; }).finally(() => this.mapInflight.delete(strMk));
+        this.mapInflight.set(strMk, objPromise);
+      }
+      return this.mapInflight.get(strMk);
+    },
+
+    Known(strMk) { return this.mapMonths.has(strMk); },
+    Data(strMk) { const objM = this.mapMonths.get(strMk); return objM ? objM.objData : null; },
+  };
+
+  // GitHub Contents API는 같은 브랜치에 동시 커밋하면 충돌하므로 순차 실행
+  let g_objWriteChain = Promise.resolve();
+  let g_nPending = 0;
+
+  /** 최신 월 파일을 읽어 fnApply로 수정 후 커밋. 충돌(409/422)이면 1회 재시도 */
+  function MutateMonth(strMk, fnApply, strMessage, objFallback) {
+    const fnRun = async () => {
+      if (!CanWrite()) throw new Error('먼저 GitHub를 연결해 주세요');
+      for (let nTry = 0; nTry < 2; nTry++) {
+        const objCur = await g_objStore.FetchRemote(strMk);
+        const objData = objCur.objData ? Clone(objCur.objData) : Clone(objFallback);
+        fnApply(objData);
+        objData.month = strMk;
+        objData.updatedAt = new Date().toISOString();
+        const strContent = B64Encode(`${JSON.stringify(NormalizeMonth(objData, strMk), null, 2)}\n`);
+        const objRes = await Gh('PUT', ContentsUrl(MonthFilePath(strMk)), { message: strMessage, content: strContent, branch: g_objConfig.branch, ...(objCur.strSha ? { sha: objCur.strSha } : {}) });
+        if ((objRes.status === 409 || objRes.status === 422) && nTry === 0) { console.warn(`커밋 충돌로 다시 시도합니다: ${strMk}`); continue; }
+        if (!objRes.ok) throw await ApiError(objRes);
+        const objJson = await objRes.json();
+        g_objStore.Put(strMk, objJson.content ? objJson.content.sha : null, NormalizeMonth(objData, strMk));
+        return;
+      }
+    };
+    g_nPending += 1;
+    SetSync('저장 중', false);
+    const objPromise = g_objWriteChain.then(fnRun, fnRun);
+    g_objWriteChain = objPromise.catch(() => {});
+    return objPromise.finally(() => { g_nPending -= 1; if (g_nPending === 0) SetSync('', false); });
+  }
+
+  /* ================= 상태 ================= */
+  const g_objState = { strMonth: CurrentMonthKey(), objView: null, bSaved: false, strTemplateFrom: '', bLoading: false, strError: '' };
+  const g_objEl = {
+    elPane: Q('#pane'), elViewport: Q('#viewport'), elTitle: Q('#monthTitle'), elSub: Q('#monthSub'),
+    elSync: Q('#sync'), elSyncText: Q('#syncText'), elDot: Q('#settingsDot'), elBackdrop: Q('#backdrop'), elToast: Q('#toast'),
+  };
+
+  function SetSync(strText, bError) {
+    if (!strText && g_nPending > 0) strText = '저장 중';
+    g_objEl.elSync.classList.toggle('on', !!strText);
+    g_objEl.elSync.classList.toggle('err', !!bError);
+    g_objEl.elSyncText.textContent = strText;
+  }
+
+  let g_nToastTimer = 0;
+  function Toast(strMsg) {
+    g_objEl.elToast.textContent = strMsg;
+    g_objEl.elToast.classList.add('on');
+    clearTimeout(g_nToastTimer);
+    g_nToastTimer = setTimeout(() => g_objEl.elToast.classList.remove('on'), 2400);
+  }
+
+  /** 현재 월 화면용 데이터 결정: 저장된 파일 → 없으면 가장 가까운 이전 달 구조 → 기본 항목 */
+  function ResolveView(strMk) {
+    const objData = g_objStore.Data(strMk);
+    if (objData) return { objView: Clone(objData), bSaved: true, strFrom: '' };
+    for (let i = 1; i <= g_nLookback; i++) {
+      const strPrev = AddMonth(strMk, -i);
+      const objPrev = g_objStore.Data(strPrev);
+      if (objPrev) return { objView: StructureFrom(objPrev, strMk), bSaved: false, strFrom: strPrev };
+    }
+    return { objView: DefaultMonth(strMk), bSaved: false, strFrom: '' };
+  }
+
+  function ApplyPalette(strMk) {
+    const [nY, nM] = strMk.split('-').map(Number);
+    const objP = g_arrPalettes[(((nY * 12 + nM) % 7) + 7) % 7];
+    const objStyle = document.body.style;
+    objStyle.setProperty('--pa', objP.a); objStyle.setProperty('--pb', objP.b); objStyle.setProperty('--pacc', objP.acc);
+    objStyle.setProperty('--pda', objP.da); objStyle.setProperty('--pdb', objP.db); objStyle.setProperty('--pdacc', objP.dacc);
+  }
+
+  /* ================= 렌더링 ================= */
+  const g_strIconEdit = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>';
+
+  function RenderHeader() {
+    const [nY, nM] = g_objState.strMonth.split('-');
+    g_objEl.elTitle.textContent = `${nY}.${nM}`;
+    const bCurrent = g_objState.strMonth === CurrentMonthKey();
+    g_objEl.elSub.className = bCurrent ? '' : 'today-link';
+    g_objEl.elSub.textContent = bCurrent ? '이번 달' : '이번 달로 이동';
+    g_objEl.elDot.classList.toggle('on', !CanWrite());
+  }
+
+  function RenderPane() {
+    RenderHeader();
+    ApplyPalette(g_objState.strMonth);
+    const objR = ResolveView(g_objState.strMonth);
+    g_objState.objView = objR.objView;
+    g_objState.bSaved = objR.bSaved;
+    g_objState.strTemplateFrom = objR.strFrom;
+
+    if (g_objState.bLoading && !g_objStore.Known(g_objState.strMonth)) {
+      g_objEl.elPane.innerHTML = `<div class="skeleton"><span class="sk-line" style="width:30%"></span><span class="sk-line" style="width:60%;height:30px"></span><span class="sk-line"></span><span class="sk-line" style="width:80%"></span></div>`;
+      return;
+    }
+
+    const objV = g_objState.objView;
+    const objSum = Summarize(objV);
+    const nRatio = objV.salary > 0 ? Math.min(objSum.nOut / objV.salary, 1) : (objSum.nOut > 0 ? 1 : 0);
+    const bOver = objV.salary > 0 && objSum.nOut > objV.salary + objSum.nIn;
+    const arrHtml = [];
+
+    arrHtml.push(`<div class="swipe-hint" aria-hidden="true"><i></i><i class="on"></i><i></i></div>`);
+    arrHtml.push(`<section class="hero">
+      <p class="hero-label">잔액</p>
+      <p class="hero-amount num${objSum.nBalance < 0 ? ' minus' : ''}">${objSum.nBalance < 0 ? '-' : ''}${Won(Math.abs(objSum.nBalance))}<small>원</small></p>
+      <div class="bar"><i class="${bOver ? 'over' : ''}" style="width:${(nRatio * 100).toFixed(1)}%"></i></div>
+      <div class="hero-grid">
+        <button class="hero-cell${objV.salary ? '' : ' empty'}" data-act="salary"><span>급여 ${g_strIconEdit}</span><b class="num">${objV.salary ? Won(objV.salary) + '원' : '입력하기'}</b></button>
+        <div class="hero-cell"><span>지출 합계</span><b class="num">${Won(objSum.nOut)}원</b></div>
+        ${objSum.nIn ? `<div class="hero-cell"><span>수입 항목</span><b class="num" style="color:var(--plus)">+${Won(objSum.nIn)}원</b></div>` : ''}
+      </div>
+    </section>`);
+
+    arrHtml.push(`<div class="cols">${objV.columns.map((objCol) => `<div class="col-chip${objSum.objCols[objCol.id] ? '' : ' zero'}"><span>${Esc(objCol.name)}</span><b class="num">${Won(objSum.objCols[objCol.id])}</b></div>`).join('')}</div>`);
+
+    if (g_objState.strError) {
+      arrHtml.push(`<div class="notice" style="color:var(--danger)">${Esc(g_objState.strError)}<button class="btn sm" data-act="retry">다시 시도</button></div>`);
+    } else if (!g_objState.bSaved) {
+      const strFrom = g_objState.strTemplateFrom;
+      arrHtml.push(`<div class="notice"><span>${strFrom ? `<b>${strFrom.replace('-', '.')}</b> 항목으로 새 달을 준비했어요. 금액을 입력하면 저장돼요.` : '아직 저장된 내용이 없어요. 금액을 입력하면 저장돼요.'}</span>${strFrom ? `<button class="btn sm" data-act="copy">금액도 복사</button>` : ''}</div>`);
+    }
+
+    // 같은 색이 연속된 항목끼리 하나의 카드로 묶음
+    const arrGroups = [];
+    objV.items.forEach((objItem) => {
+      const objLast = arrGroups[arrGroups.length - 1];
+      if (objLast && objLast.strColor === objItem.color) objLast.arrItems.push(objItem);
+      else arrGroups.push({ strColor: objItem.color, arrItems: [objItem] });
+    });
+    arrHtml.push('<div class="groups">');
+    arrGroups.forEach((objG) => {
+      arrHtml.push(`<div class="group" style="--ic:${g_objColors[objG.strColor].strHex}">`);
+      objG.arrItems.forEach((objItem) => {
+        const nTotal = ItemTotal(objItem);
+        const strParts = objV.columns.filter((objCol) => objItem.amounts[objCol.id]).map((objCol) => `${Esc(objCol.name)} ${Won(objItem.amounts[objCol.id])}`).join(' · ');
+        const strSub = [strParts, Esc(objItem.memo)].filter(Boolean).join(' — ');
+        const strAmtCls = nTotal ? (objItem.type === 'in' ? ' plus' : '') : ' zero';
+        arrHtml.push(`<button class="row" data-id="${Esc(objItem.id)}">
+          <span class="row-main"><span class="row-name">${Esc(objItem.name)}${objItem.type === 'in' ? '<span class="tag">수입</span>' : ''}</span>${strSub ? `<span class="row-sub num">${strSub}</span>` : ''}</span>
+          <span class="row-amt num${strAmtCls}">${nTotal ? (objItem.type === 'in' ? '+' : '') + Won(nTotal) : '—'}</span>
+        </button>`);
+      });
+      arrHtml.push('</div>');
+    });
+    arrHtml.push('</div>');
+    arrHtml.push(`<button class="add-row" data-act="add"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>항목 추가</button>`);
+    arrHtml.push(`<div class="foot-total"><span>총 지출</span><b class="num">-${Won(objSum.nOut)}원</b></div>`);
+    g_objEl.elPane.innerHTML = arrHtml.join('');
+  }
+
+  /* ================= 데이터 불러오기 ================= */
+  let g_nLoadSeq = 0;
+  async function Load(bForce) {
+    const nSeq = ++g_nLoadSeq;
+    const strMk = g_objState.strMonth;
+    g_objState.strError = '';
+    if (!HasRepo()) { g_objState.bLoading = false; RenderPane(); return; }
+    g_objState.bLoading = true;
+    if (!g_objStore.Known(strMk)) RenderPane();
+    try {
+      let bChanged = await g_objStore.Ensure(strMk, bForce);
+      // 저장 파일이 없으면 이전 달들을 거슬러 올라가 항목 구조를 찾음
+      if (!g_objStore.Data(strMk)) {
+        for (let i = 1; i <= g_nLookback; i++) {
+          const strPrev = AddMonth(strMk, -i);
+          if (await g_objStore.Ensure(strPrev, false)) bChanged = true;
+          if (g_objStore.Data(strPrev)) break;
+        }
+      }
+      if (nSeq !== g_nLoadSeq) return;
+      g_objState.bLoading = false;
+      if (bChanged || !g_objEl.elPane.querySelector('.hero')) RenderPane();
+    } catch (e) {
+      console.error('월 데이터 불러오기 실패', e);
+      if (nSeq !== g_nLoadSeq) return;
+      g_objState.bLoading = false;
+      g_objState.strError = e.message;
+      RenderPane();
+    }
+    // 옆 달 미리 읽기 (스와이프 시 바로 표시)
+    if (nSeq === g_nLoadSeq) [AddMonth(strMk, -1), AddMonth(strMk, 1)].forEach((strAdj) => { if (!g_objStore.Known(strAdj)) g_objStore.Ensure(strAdj, false).catch(() => {}); });
+  }
+
+  /* ================= 변경 (낙관적 반영 후 커밋) ================= */
+  function Commit(fnApply, strMessage) {
+    const strMk = g_objState.strMonth;
+    if (!CanWrite()) { Toast('먼저 GitHub를 연결해 주세요'); OpenSettings(); return Promise.resolve(false); }
+    const objFallback = Clone(g_objState.objView);
+    const objLocal = Clone(g_objState.objView);
+    fnApply(objLocal);
+    g_objStore.mapMonths.set(strMk, { objData: NormalizeMonth(objLocal, strMk), strSha: (g_objStore.mapMonths.get(strMk) || {}).strSha || null, nFetchedAt: 0 });
+    if (g_objState.strMonth === strMk) RenderPane();
+    return MutateMonth(strMk, fnApply, `가계부 ${strMk} · ${strMessage}`, objFallback).then(() => {
+      if (g_objState.strMonth === strMk) RenderPane();
+      return true;
+    }).catch((e) => {
+      console.error('저장 실패', e);
+      SetSync('저장 실패', true);
+      Toast(e.message);
+      g_objStore.setFresh.delete(strMk);
+      g_objStore.Ensure(strMk, true).then(() => { if (g_objState.strMonth === strMk) RenderPane(); }).catch(() => {});
+      return false;
+    });
+  }
+
+  /* ================= 시트 공통 ================= */
+  let g_elOpenSheet = null;
+  function OpenSheet(elSheet) {
+    if (g_elOpenSheet) g_elOpenSheet.classList.remove('on');
+    g_elOpenSheet = elSheet;
+    g_objEl.elBackdrop.classList.add('on');
+    elSheet.classList.add('on');
+  }
+  function CloseSheet() {
+    if (!g_elOpenSheet) return;
+    if (document.activeElement && g_elOpenSheet.contains(document.activeElement)) document.activeElement.blur();
+    g_elOpenSheet.classList.remove('on');
+    g_objEl.elBackdrop.classList.remove('on');
+    g_elOpenSheet = null;
+  }
+  g_objEl.elBackdrop.addEventListener('click', CloseSheet);
+  document.querySelectorAll('[data-close]').forEach((elBtn) => elBtn.addEventListener('click', CloseSheet));
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') { CloseSheet(); return; }
+    if (g_elOpenSheet || /INPUT|TEXTAREA/.test((document.activeElement || {}).tagName || '')) return;
+    if (e.key === 'ArrowLeft') GoMonth(-1);
+    if (e.key === 'ArrowRight') GoMonth(1);
+  });
+
+  function BindMoneyInput(elInput, fnOnChange) {
+    elInput.addEventListener('input', () => {
+      const n = ParseInput(elInput.value);
+      elInput.value = n ? Won(n) : '';
+      if (fnOnChange) fnOnChange();
+    });
+    elInput.addEventListener('focus', () => setTimeout(() => elInput.select(), 0));
+  }
+
+  /* ================= 항목 시트 ================= */
+  const g_objItemSheet = { elSheet: Q('#itemSheet'), strId: '', strType: 'out', strColor: 'yellow', arrInputs: [] };
+
+  function BuildColorSwatches() {
+    Q('#itColors').innerHTML = Object.entries(g_objColors).map(([strKey, objC]) => `<button type="button" class="swatch" data-color="${strKey}" style="--sw:${objC.strHex}" aria-label="${objC.strName}"></button>`).join('');
+  }
+  BuildColorSwatches();
+
+  function SyncItemSheetUi() {
+    Q('#itType').querySelectorAll('button').forEach((elB) => elB.classList.toggle('on', elB.dataset.type === g_objItemSheet.strType));
+    Q('#itColors').querySelectorAll('.swatch').forEach((elB) => elB.classList.toggle('on', elB.dataset.color === g_objItemSheet.strColor));
+    const nTotal = g_objItemSheet.arrInputs.reduce((n, elIn) => n + ParseInput(elIn.value), 0);
+    Q('#itTotal').textContent = `${Won(nTotal)}원`;
+  }
+
+  function OpenItem(strId) {
+    const objV = g_objState.objView;
+    const objItem = strId ? objV.items.find((x) => x.id === strId) : null;
+    if (strId && !objItem) return;
+    g_objItemSheet.strId = strId || '';
+    g_objItemSheet.strType = objItem ? objItem.type : 'out';
+    const objLast = objV.items[objV.items.length - 1];
+    g_objItemSheet.strColor = objItem ? objItem.color : (objLast ? objLast.color : 'gray');
+    Q('#itemTitle').textContent = objItem ? objItem.name : '새 항목';
+    Q('#itName').value = objItem ? objItem.name : '';
+    Q('#itMemo').value = objItem ? objItem.memo : '';
+    const elWrap = Q('#itAmounts');
+    elWrap.innerHTML = objV.columns.map((objCol) => `<label class="field money"><span>${Esc(objCol.name)}</span><input type="text" inputmode="numeric" autocomplete="off" data-col="${objCol.id}" value="${objItem && objItem.amounts[objCol.id] ? Won(objItem.amounts[objCol.id]) : ''}" placeholder="0"></label>`).join('');
+    g_objItemSheet.arrInputs = [...elWrap.querySelectorAll('input')];
+    g_objItemSheet.arrInputs.forEach((elIn) => BindMoneyInput(elIn, SyncItemSheetUi));
+    const nIdx = objItem ? objV.items.indexOf(objItem) : -1;
+    Q('#itTools').style.display = objItem ? '' : 'none';
+    Q('#itUp').disabled = nIdx <= 0;
+    Q('#itDown').disabled = nIdx < 0 || nIdx >= objV.items.length - 1;
+    SyncItemSheetUi();
+    OpenSheet(g_objItemSheet.elSheet);
+    if (!objItem) setTimeout(() => Q('#itName').focus(), 320);
+  }
+
+  Q('#itType').addEventListener('click', (e) => { const elB = e.target.closest('button'); if (!elB) return; g_objItemSheet.strType = elB.dataset.type; SyncItemSheetUi(); });
+  Q('#itColors').addEventListener('click', (e) => { const elB = e.target.closest('.swatch'); if (!elB) return; g_objItemSheet.strColor = elB.dataset.color; SyncItemSheetUi(); });
+
+  Q('#itSave').addEventListener('click', () => {
+    const strName = Q('#itName').value.trim().slice(0, 30);
+    if (!strName) { Toast('항목 이름을 입력해 주세요'); Q('#itName').focus(); return; }
+    const objAmounts = EmptyAmounts();
+    g_objItemSheet.arrInputs.forEach((elIn) => { objAmounts[elIn.dataset.col] = ParseInput(elIn.value); });
+    const objPatch = { name: strName, type: g_objItemSheet.strType, color: g_objItemSheet.strColor, amounts: objAmounts, memo: Q('#itMemo').value.trim().slice(0, 100) };
+    const strId = g_objItemSheet.strId;
+    CloseSheet();
+    if (strId) {
+      const objOld = g_objState.objView.items.find((x) => x.id === strId);
+      if (objOld && JSON.stringify({ ...objOld, ...objPatch }) === JSON.stringify(objOld) && g_objState.bSaved) return;
+      Commit((objD) => { const objIt = objD.items.find((x) => x.id === strId); if (objIt) Object.assign(objIt, objPatch); else objD.items.push({ id: strId, ...objPatch }); }, `${strName} 수정 (${Won(ItemTotal(objPatch))}원)`);
+    } else {
+      const strNewId = NewId();
+      Commit((objD) => { objD.items.push({ id: strNewId, ...objPatch }); }, `${strName} 추가`);
+    }
+  });
+
+  function MoveItem(nDir) {
+    const strId = g_objItemSheet.strId;
+    const objItem = g_objState.objView.items.find((x) => x.id === strId);
+    CloseSheet();
+    if (!objItem) return;
+    Commit((objD) => { const i = objD.items.findIndex((x) => x.id === strId); const j = i + nDir; if (i < 0 || j < 0 || j >= objD.items.length) return; [objD.items[i], objD.items[j]] = [objD.items[j], objD.items[i]]; }, `${objItem.name} 순서 변경`);
+  }
+  Q('#itUp').addEventListener('click', () => MoveItem(-1));
+  Q('#itDown').addEventListener('click', () => MoveItem(1));
+
+  Q('#itDelete').addEventListener('click', () => {
+    const strId = g_objItemSheet.strId;
+    const objItem = g_objState.objView.items.find((x) => x.id === strId);
+    if (!objItem || !confirm(`'${objItem.name}' 항목을 이 달에서 삭제할까요?\n다음 달부터는 이 항목 없이 시작해요.`)) return;
+    CloseSheet();
+    Commit((objD) => { objD.items = objD.items.filter((x) => x.id !== strId); }, `${objItem.name} 삭제`);
+  });
+
+  /* ================= 급여 시트 ================= */
+  BindMoneyInput(Q('#slAmount'));
+  function OpenSalary() {
+    Q('#slAmount').value = g_objState.objView.salary ? Won(g_objState.objView.salary) : '';
+    OpenSheet(Q('#salarySheet'));
+    setTimeout(() => Q('#slAmount').focus(), 320);
+  }
+  Q('#slSave').addEventListener('click', () => {
+    const nSalary = ParseInput(Q('#slAmount').value);
+    CloseSheet();
+    if (nSalary === g_objState.objView.salary && g_objState.bSaved) return;
+    Commit((objD) => { objD.salary = nSalary; }, `급여 ${Won(nSalary)}원`);
+  });
+
+  /* ================= 이전 달 금액 복사 ================= */
+  function CopyFromTemplate() {
+    const strFrom = g_objState.strTemplateFrom;
+    const objSrc = g_objStore.Data(strFrom);
+    if (!objSrc) return;
+    if (!confirm(`${strFrom.replace('-', '.')}의 급여와 금액을 이 달로 복사할까요?`)) return;
+    Commit((objD) => {
+      objD.salary = objSrc.salary;
+      objD.columns = Clone(objSrc.columns);
+      objD.items = Clone(objSrc.items);
+    }, `${strFrom} 금액 복사`);
+  }
+
+  /* ================= 설정 시트 ================= */
+  function SetGhStatus(strMsg, bWarn) {
+    const elS = Q('#ghStatus');
+    elS.textContent = strMsg;
+    elS.classList.toggle('warn', !!bWarn);
+  }
+
+  function OpenSettings() {
+    Q('#ghOwner').value = g_objConfig.owner;
+    Q('#ghRepo').value = g_objConfig.repo;
+    Q('#ghBranch').value = g_objConfig.branch;
+    Q('#ghPath').value = g_objConfig.path;
+    Q('#ghToken').value = '';
+    Q('#ghToken').placeholder = g_objConfig.token ? (g_objConfig.bSharedToken ? '성경 앱 토큰 사용 중' : '저장된 토큰 사용 중') : 'github_pat_...';
+    Q('#ghHelp').textContent = g_objConfig.bSharedToken
+      ? '같은 주소의 성경 구절 앱에 저장된 연결 정보를 그대로 쓰고 있어요. 그 앱의 토큰을 바꾸면 여기도 함께 바뀌어요. 다른 토큰을 쓰려면 새로 입력하세요.'
+      : 'Fine-grained 토큰에서 이 저장소를 선택하고 Contents 권한을 Read and write로 발급하세요. 토큰은 이 기기 브라우저에만 저장돼요.';
+    if (!HasRepo()) SetGhStatus('저장소 정보를 입력하세요. github.io 주소로 접속하면 자동으로 채워져요.', true);
+    else if (!g_objConfig.token) SetGhStatus('토큰이 없어 읽기 전용이에요. GitHub Pages에 배포된 내용을 보여줘요.', true);
+    else SetGhStatus(`연결됨 · ${g_objConfig.owner}/${g_objConfig.repo} (${g_objConfig.branch}) · ${CleanPath(g_objConfig.path)}`, false);
+    Q('#colNames').innerHTML = g_objState.objView.columns.map((objCol, i) => `<label class="field"><span>${i + 1}번째 열</span><input type="text" maxlength="12" data-col="${objCol.id}" value="${Esc(objCol.name)}" autocomplete="off"></label>`).join('');
+    OpenSheet(Q('#settingsSheet'));
+  }
+
+  Q('#ghSave').addEventListener('click', async () => {
+    const elBtn = Q('#ghSave');
+    const strToken = Q('#ghToken').value.trim();
+    g_objConfig.owner = Q('#ghOwner').value.trim();
+    g_objConfig.repo = Q('#ghRepo').value.trim();
+    g_objConfig.branch = Q('#ghBranch').value.trim() || 'main';
+    g_objConfig.path = CleanPath(Q('#ghPath').value);
+    if (strToken) { g_objConfig.token = strToken; g_objConfig.bSharedToken = false; }
+    SaveConfig(true);
+    if (g_objStore.strRepo !== RepoKey()) g_objStore.Reset();
+    if (!HasRepo()) { SetGhStatus('소유자와 저장소를 입력하세요', true); return; }
+    if (!g_objConfig.token) { SetGhStatus('토큰 없이 읽기 전용으로 저장했어요', true); RenderHeader(); Load(true); return; }
+    elBtn.disabled = true;
+    SetGhStatus('연결 확인 중…', false);
+    try {
+      const objRepoRes = await Gh('GET', `${g_strApi}/repos/${encodeURIComponent(g_objConfig.owner)}/${encodeURIComponent(g_objConfig.repo)}`);
+      if (!objRepoRes.ok) throw await ApiError(objRepoRes);
+      const objRepo = await objRepoRes.json();
+      if (objRepo.permissions && objRepo.permissions.push === false) throw new Error('토큰에 이 저장소의 쓰기 권한이 없어요');
+      const objBrRes = await Gh('GET', `${g_strApi}/repos/${encodeURIComponent(g_objConfig.owner)}/${encodeURIComponent(g_objConfig.repo)}/branches/${encodeURIComponent(g_objConfig.branch)}`);
+      if (!objBrRes.ok) throw await ApiError(objBrRes);
+      SetGhStatus(`연결됨 · ${g_objConfig.owner}/${g_objConfig.repo} (${g_objConfig.branch})${objRepo.private ? ' · 비공개 저장소' : ' · 공개 저장소: 금액이 공개돼요'}`, !objRepo.private);
+      Toast('GitHub에 연결했어요');
+      g_objStore.setFresh.clear();
+      RenderHeader();
+      Load(true);
+    } catch (e) {
+      console.error('연결 확인 실패', e);
+      SetGhStatus(e.message, true);
+    } finally {
+      elBtn.disabled = false;
+    }
+  });
+
+  Q('#ghClear').addEventListener('click', () => {
+    if (!g_objConfig.token) return;
+    if (g_objConfig.bSharedToken) { Toast('성경 앱의 토큰이에요. 그 앱에서 지워 주세요'); return; }
+    if (!confirm('이 기기에서 가계부 토큰을 지울까요?\nGitHub에 저장된 내역은 그대로 남아요.')) return;
+    g_objConfig.token = '';
+    SaveConfig(false);
+    LoadConfig();
+    g_objStore.setFresh.clear();
+    OpenSettings();
+    RenderHeader();
+    Load(true);
+  });
+
+  Q('#colSave').addEventListener('click', () => {
+    const arrNames = [...Q('#colNames').querySelectorAll('input')].map((elIn) => ({ id: elIn.dataset.col, name: elIn.value.trim().slice(0, 12) }));
+    if (arrNames.some((x) => !x.name)) { Toast('열 이름을 비울 수 없어요'); return; }
+    CloseSheet();
+    Commit((objD) => { objD.columns = arrNames; }, `열 이름 변경 (${arrNames.map((x) => x.name).join(', ')})`);
+  });
+
+  /* ================= 화면 이벤트 ================= */
+  let g_bSuppressClick = false;
+  g_objEl.elPane.addEventListener('click', (e) => {
+    if (g_bSuppressClick) return;
+    const elRow = e.target.closest('.row');
+    if (elRow) { OpenItem(elRow.dataset.id); return; }
+    const elAct = e.target.closest('[data-act]');
+    if (!elAct) return;
+    const strAct = elAct.dataset.act;
+    if (strAct === 'salary') OpenSalary();
+    else if (strAct === 'add') OpenItem('');
+    else if (strAct === 'copy') CopyFromTemplate();
+    else if (strAct === 'retry') Load(true);
+  });
+  Q('#btnSettings').addEventListener('click', OpenSettings);
+  Q('#btnPrev').addEventListener('click', () => GoMonth(-1));
+  Q('#btnNext').addEventListener('click', () => GoMonth(1));
+  Q('#btnToday').addEventListener('click', () => { const strNow = CurrentMonthKey(); if (strNow !== g_objState.strMonth) GoMonth(strNow > g_objState.strMonth ? 1 : -1, strNow); });
+
+  /* ================= 스와이프 월 이동 ================= */
+  let g_bAnimating = false;
+  const SetPaneX = (nX, bAnim) => { g_objEl.elPane.classList.toggle('anim', !!bAnim); g_objEl.elPane.style.transform = nX ? `translate3d(${nX}px,0,0)` : ''; };
+
+  function GoMonth(nDir, strTarget) {
+    if (g_bAnimating) return;
+    g_bAnimating = true;
+    const nW = g_objEl.elViewport.clientWidth || 360;
+    SetPaneX(-nDir * nW, true);
+    g_objEl.elPane.style.opacity = '0.2';
+    setTimeout(() => {
+      g_objState.strMonth = strTarget || AddMonth(g_objState.strMonth, nDir);
+      g_objState.strError = '';
+      g_objState.bLoading = HasRepo() && !g_objStore.Known(g_objState.strMonth);
+      RenderPane();
+      SetPaneX(nDir * nW, false);
+      void g_objEl.elPane.offsetWidth;
+      SetPaneX(0, true);
+      g_objEl.elPane.style.opacity = '';
+      window.scrollTo({ top: 0, behavior: 'auto' });
+      setTimeout(() => { g_bAnimating = false; g_objEl.elPane.classList.remove('anim'); }, 250);
+      Load(false);
+    }, 200);
+  }
+
+  (() => {
+    let objDrag = null;
+    const elV = g_objEl.elViewport;
+    elV.addEventListener('pointerdown', (e) => {
+      if (g_bAnimating || (e.pointerType === 'mouse' && e.button !== 0)) return;
+      objDrag = { nX: e.clientX, nY: e.clientY, nT: performance.now(), strAxis: '', nDx: 0, nId: e.pointerId };
+    });
+    elV.addEventListener('pointermove', (e) => {
+      if (!objDrag || e.pointerId !== objDrag.nId) return;
+      const nDx = e.clientX - objDrag.nX;
+      const nDy = e.clientY - objDrag.nY;
+      if (!objDrag.strAxis) {
+        if (Math.abs(nDx) < 8 && Math.abs(nDy) < 8) return;
+        objDrag.strAxis = Math.abs(nDx) > Math.abs(nDy) * 1.2 ? 'x' : 'y';
+        if (objDrag.strAxis === 'x') { try { elV.setPointerCapture(e.pointerId); } catch { /* 무시 */ } }
+      }
+      if (objDrag.strAxis !== 'x') return;
+      objDrag.nDx = nDx;
+      SetPaneX(nDx * 0.92, false);
+      g_objEl.elPane.style.opacity = String(1 - Math.min(Math.abs(nDx) / (elV.clientWidth * 1.6), 0.5));
+    });
+    const fnEnd = (e) => {
+      if (!objDrag || e.pointerId !== objDrag.nId) return;
+      const objD = objDrag;
+      objDrag = null;
+      if (objD.strAxis !== 'x') return;
+      g_bSuppressClick = true;
+      setTimeout(() => { g_bSuppressClick = false; }, 300);
+      const nVel = Math.abs(objD.nDx) / Math.max(performance.now() - objD.nT, 1);
+      if (e.type !== 'pointercancel' && (Math.abs(objD.nDx) > elV.clientWidth * 0.22 || (nVel > 0.45 && Math.abs(objD.nDx) > 30))) { GoMonth(objD.nDx < 0 ? 1 : -1); return; }
+      SetPaneX(0, true);
+      g_objEl.elPane.style.opacity = '';
+    };
+    elV.addEventListener('pointerup', fnEnd);
+    elV.addEventListener('pointercancel', fnEnd);
+  })();
+
+  /* ================= 시작 ================= */
+  LoadConfig();
+  g_objStore.Hydrate();
+  g_objState.bLoading = HasRepo() && !g_objStore.Known(g_objState.strMonth);
+  RenderPane();
+  Load(false);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && !g_nPending) Load(false); });
+  window.addEventListener('storage', (e) => { if (e.key === g_objKeys.strShared || e.key === g_objKeys.strConfig) { LoadConfig(); RenderHeader(); } });
+})();
+</script>
+</body>
+</html>
