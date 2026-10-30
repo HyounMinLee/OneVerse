@@ -72,6 +72,8 @@ h1{margin:3px 0 0;font-size:27px;font-weight:780;letter-spacing:-.035em;line-hei
 .icon-btn{position:relative;width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:var(--glass);
   -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);box-shadow:var(--shadow);border:1px solid var(--glass-2)}
 .icon-btn svg{width:18px;height:18px}
+a.icon-btn{color:inherit;text-decoration:none}
+.top-actions{display:flex;align-items:center;gap:8px}
 .badge{position:absolute;top:6px;right:7px;width:8px;height:8px;border-radius:50%;background:var(--danger);box-shadow:0 0 0 2px var(--bg);display:none}
 .badge.on{display:block}
 .pill{height:40px;padding:0 15px;border-radius:20px;background:var(--glass);border:1px solid var(--glass-2);
@@ -284,10 +286,15 @@ body[data-sheet="edit"] #editSheet,body[data-sheet="settings"] #settingsSheet{tr
       <span>오늘의 말씀</span>
       <span class="sync" id="sync" role="status"><i></i><span id="syncText">동기화 중</span></span>
     </div>
-    <button class="icon-btn" id="settingsBtn" aria-label="GitHub 연결 설정">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="9" r="2.5"/><path d="M6 8.5v7"/><path d="M18 11.5c0 3-3 3.5-9.5 5"/></svg>
-      <i class="badge" id="connBadge"></i>
-    </button>
+    <div class="top-actions">
+      <a class="icon-btn" href="week.html" aria-label="주간 말씀으로 전환" title="주간 말씀">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5V5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2.5z"/><path d="M6 21h13"/><path d="M11.5 7v7M9 9.5h5"/></svg>
+      </a>
+      <button class="icon-btn" id="settingsBtn" aria-label="GitHub 연결 설정">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="9" r="2.5"/><path d="M6 8.5v7"/><path d="M18 11.5c0 3-3 3.5-9.5 5"/></svg>
+        <i class="badge" id="connBadge"></i>
+      </button>
+    </div>
   </div>
 
   <header class="topbar">
