@@ -1,1 +1,946 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f3f5f9" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0c0f16" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="주간 말씀">
+<title>주간 말씀</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&display=swap">
+<style>
+:root{
+  --bg:#f3f5f9; --surface:#ffffff; --surface-2:#e9ecf2; --text:#161a22; --muted:#6e7480; --faint:#b3b8c2; --line:#dde1e8;
+  --accent:#3e68c4; --accent-ink:#ffffff; --accent-soft:#e3eaf8; --card-line:#7b9be0;
+  --danger:#d4553f; --ok:#2f8a5b;
+  --glass:rgba(20,24,34,.05);
+  --shadow:0 1px 2px rgba(20,24,34,.04),0 10px 28px rgba(20,24,34,.06);
+  --sans:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  --verse:"Gowun Dodum","Apple SD Gothic Neo","Malgun Gothic",var(--sans);
+  color-scheme:light dark;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#0c0f16; --surface:#121621; --surface-2:#1b2030; --text:#f2f3f6; --muted:#8e94a1; --faint:#4d5363; --line:#262c3b;
+    --accent:#7ea2ef; --accent-ink:#0c1324; --accent-soft:#1a2440; --card-line:#6f95e3;
+    --danger:#ef7a66; --ok:#7fd3a4;
+    --glass:rgba(255,255,255,.06);
+    --shadow:0 1px 2px rgba(0,0,0,.35),0 12px 32px rgba(0,0,0,.28);
+  }
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{background:var(--bg)}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);font-size:16px;line-height:1.5;letter-spacing:-.01em;overscroll-behavior-x:none;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+input,textarea{font:inherit;color:inherit}
+svg{display:block}
+.num{font-variant-numeric:tabular-nums}
 
+.app{max-width:560px;margin:0 auto;padding:0 16px calc(48px + env(safe-area-inset-bottom))}
+
+/* 상단 */
+.brand-row{display:flex;align-items:center;justify-content:space-between;padding:calc(14px + env(safe-area-inset-top)) 4px 0}
+.brand{display:flex;align-items:center;gap:9px;font-size:15px;font-weight:750;letter-spacing:-.02em}
+.brand-ic{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;background:linear-gradient(150deg,#5b84d8,#2f4f9a);color:#fff;box-shadow:0 4px 10px rgba(47,79,154,.3)}
+.brand-ic svg{width:17px;height:17px}
+.top-actions{display:flex;align-items:center;gap:4px}
+.icon-btn{position:relative;width:40px;height:40px;display:grid;place-items:center;border-radius:14px;color:var(--text);text-decoration:none}
+.icon-btn:active{background:var(--glass)}
+.icon-btn svg{width:22px;height:22px}
+.icon-btn .dot{position:absolute;top:8px;right:8px;width:8px;height:8px;border-radius:50%;background:var(--danger);display:none}
+.icon-btn .dot.on{display:block}
+.sync{display:none;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:12px;background:var(--glass);font-size:12px;font-weight:650;color:var(--muted)}
+.sync.on{display:inline-flex}
+.sync i{width:10px;height:10px;border-radius:50%;border:2px solid currentColor;border-right-color:transparent;animation:spin .8s linear infinite}
+.sync.err{color:var(--danger)}
+.sync.err i{animation:none;border-color:currentColor}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.week-nav{position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-content:space-between;margin:0 -16px;padding:calc(8px + env(safe-area-inset-top)) 12px 10px;
+  background:color-mix(in srgb,var(--bg) 72%,transparent);-webkit-backdrop-filter:blur(18px) saturate(1.4);backdrop-filter:blur(18px) saturate(1.4)}
+.wn-title{display:flex;flex-direction:column;align-items:center}
+.wn-title b{font-size:26px;font-weight:800;letter-spacing:-.04em;line-height:1.15}
+.wn-title span{font-size:12px;font-weight:650;color:var(--muted)}
+.wn-title span em{font-style:normal;color:var(--accent)}
+.nav-btn{width:44px;height:44px;display:grid;place-items:center;border-radius:16px;background:var(--glass)}
+.nav-btn:active{transform:scale(.94)}
+.nav-btn svg{width:20px;height:20px}
+
+/* 스와이프 영역 */
+.viewport{overflow:hidden;touch-action:pan-y;margin:0 -16px;padding:0 16px;min-height:60vh}
+.pane{will-change:transform}
+.pane.anim{transition:transform .24s cubic-bezier(.2,.8,.2,1),opacity .24s ease}
+.swipe-hint{display:flex;justify-content:center;gap:5px;margin:2px 0 12px}
+.swipe-hint i{width:5px;height:5px;border-radius:50%;background:var(--faint);opacity:.6}
+.swipe-hint i.on{width:16px;border-radius:3px;background:var(--accent);opacity:1}
+
+/* 말씀 카드 (첨부 화면 기준) */
+.cards{display:flex;flex-direction:column;gap:14px}
+.vcard{padding:22px 22px 20px;border-radius:26px;border:1.5px solid var(--card-line);background:var(--surface);box-shadow:var(--shadow)}
+.vc-head{display:flex;align-items:center;gap:10px}
+.vc-title{flex:1;min-width:0;font-size:16px;font-weight:750;letter-spacing:-.03em;text-align:left;line-height:1.4;word-break:keep-all}
+.vc-date{flex-shrink:0;font-size:15px;font-weight:500;color:var(--muted)}
+.vc-fold{flex:0 0 32px;width:32px;height:32px;margin-right:-6px;display:grid;place-items:center;border-radius:10px;color:var(--accent)}
+.vc-fold svg{width:20px;height:20px;transition:transform .2s}
+.vcard.folded .vc-fold svg{transform:rotate(180deg)}
+.vc-ref{margin:6px 0 0;font-size:17px;font-weight:750;color:var(--accent);letter-spacing:-.02em}
+.vc-body{margin-top:22px}
+.vcard.folded .vc-body{display:none}
+.vc-text{margin:0;font-family:var(--verse);font-size:23px;line-height:1.95;letter-spacing:-.01em;word-break:keep-all;overflow-wrap:anywhere;cursor:default}
+.vc-text.masked{cursor:pointer}
+.vc-text .bl{color:transparent;background:color-mix(in srgb,var(--text) 12%,transparent);border-radius:6px;-webkit-box-decoration-break:clone;box-decoration-break:clone;transition:color .15s,background-color .15s}
+.vc-text.peek .bl{color:var(--muted);background:transparent}
+.vc-hint{margin:6px 0 0;font-size:12px;font-weight:600;color:var(--faint)}
+.vc-modes{display:flex;gap:7px;margin-top:22px}
+.mode{flex:1 1 0;min-width:0;height:52px;padding:0 4px;border-radius:18px;border:1.5px solid var(--line);font-size:16px;font-weight:600;color:var(--muted);white-space:nowrap}
+.mode.on{border-color:var(--card-line);color:var(--accent)}
+.mode:active{transform:scale(.97)}
+.mode.memo{flex:1.45 1 0;display:flex;align-items:center;justify-content:center;gap:6px}
+.mode.memo i{flex-shrink:0;width:19px;height:19px;border-radius:50%;border:2px solid currentColor;display:grid;place-items:center}
+.mode.memo i svg{width:12px;height:12px;opacity:0}
+.mode.memo.done{border-color:color-mix(in srgb,var(--ok) 60%,transparent);color:var(--ok)}
+.mode.memo.done i{background:var(--ok);border-color:var(--ok);color:var(--surface)}
+.mode.memo.done i svg{opacity:1}
+.vc-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:22px}
+.vc-link{display:inline-flex;align-items:center;gap:4px;font-size:16px;font-weight:600;color:var(--accent);text-decoration:none}
+.vc-link svg{width:16px;height:16px}
+.vc-link.off{color:var(--faint)}
+.vc-edit{flex-shrink:0;height:32px;padding:0 10px;border-radius:10px;font-size:13px;font-weight:650;color:var(--muted)}
+.vc-edit:active{background:var(--glass)}
+
+.empty{padding:34px 20px;border-radius:26px;border:1.5px dashed var(--line);text-align:center;color:var(--muted);font-size:14px;line-height:1.6;word-break:keep-all}
+.empty b{display:block;margin-bottom:4px;font-size:16px;color:var(--text)}
+.notice{display:flex;align-items:center;gap:10px;margin:0 0 14px;padding:12px 14px;border-radius:18px;background:var(--glass);font-size:13px;line-height:1.5;color:var(--danger);word-break:keep-all}
+.notice .btn{margin-left:auto;flex-shrink:0}
+.add-row{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;height:52px;margin-top:14px;border-radius:20px;border:1.5px dashed var(--line);color:var(--muted);font-size:14px;font-weight:700}
+.add-row svg{width:18px;height:18px}
+.add-row:active{background:var(--glass)}
+.week-stat{margin:14px 4px 0;font-size:12px;font-weight:650;color:var(--muted);text-align:center}
+
+.skeleton{padding:24px;border-radius:26px;background:var(--surface);box-shadow:var(--shadow)}
+.sk-line{display:block;height:14px;border-radius:7px;background:var(--surface-2);margin:12px 0;animation:pulse 1.2s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.45}}
+
+/* 버튼 */
+.btn{height:46px;padding:0 18px;border-radius:15px;font-size:15px;font-weight:750;letter-spacing:-.02em;background:var(--surface-2);color:var(--text)}
+.btn.sm{height:34px;padding:0 12px;border-radius:11px;font-size:13px}
+.btn.primary{background:var(--accent);color:var(--accent-ink)}
+.btn.danger{color:var(--danger);background:color-mix(in srgb,var(--danger) 12%,transparent)}
+.btn:disabled{opacity:.45;cursor:default}
+.btn:active:not(:disabled){transform:scale(.98)}
+
+/* 시트 */
+.backdrop{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.4);opacity:0;pointer-events:none;transition:opacity .25s}
+.backdrop.on{opacity:1;pointer-events:auto}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:50;max-width:560px;max-height:92vh;margin:0 auto;overflow-y:auto;overscroll-behavior:contain;
+  padding:10px 20px calc(20px + env(safe-area-inset-bottom));border-radius:28px 28px 0 0;background:var(--surface);
+  transform:translateY(105%);transition:transform .3s cubic-bezier(.2,.8,.2,1);visibility:hidden}
+.sheet.on{transform:none;visibility:visible}
+.grip{width:38px;height:5px;margin:0 auto 14px;border-radius:3px;background:var(--line)}
+.sheet h2{margin:0 0 14px;font-size:20px;font-weight:800;letter-spacing:-.03em}
+.field{display:block;margin-bottom:12px}
+.field > span{display:block;margin:0 2px 6px;font-size:13px;font-weight:700;color:var(--muted)}
+.field input,.field textarea{width:100%;padding:0 14px;border:1.5px solid var(--line);border-radius:14px;background:var(--bg);font-size:16px;outline:none}
+.field input{height:48px}
+.field textarea{min-height:140px;padding:12px 14px;resize:vertical;line-height:1.6;font-family:var(--verse);font-size:17px}
+.field input:focus,.field textarea:focus{border-color:var(--accent)}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.sheet-actions{display:flex;gap:8px;margin-top:6px}
+.sheet-actions .btn.primary{flex:1}
+.tools{display:flex;gap:8px;margin-top:12px}
+.tools .btn{margin-left:auto}
+.set-note{margin:0 0 14px;padding:12px 14px;border-radius:14px;background:var(--accent-soft);color:var(--accent);font-size:13px;font-weight:600;line-height:1.5;word-break:keep-all}
+.set-note.warn{background:color-mix(in srgb,var(--danger) 14%,transparent);color:var(--danger)}
+.set-help{margin:-4px 2px 16px;font-size:12px;line-height:1.6;color:var(--muted);word-break:keep-all}
+
+#toast{position:fixed;left:50%;bottom:calc(28px + env(safe-area-inset-bottom));z-index:60;transform:translate(-50%,20px);max-width:calc(100% - 40px);
+  padding:12px 18px;border-radius:16px;background:var(--text);color:var(--bg);font-size:14px;font-weight:650;opacity:0;pointer-events:none;transition:.25s;word-break:keep-all;text-align:center}
+#toast.on{opacity:1;transform:translate(-50%,0)}
+
+@media (max-width:380px){.vcard{padding:20px 16px 18px}.vc-text{font-size:21px}.mode{font-size:14.5px;height:48px}.vc-modes{gap:5px}.mode.memo{gap:4px}.mode.memo i{width:17px;height:17px}}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="brand-row">
+    <div class="brand">
+      <span class="brand-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5V5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2.5z"/><path d="M6 21h13"/><path d="M11.5 7v7M9 9.5h5"/></svg></span>
+      주간 말씀
+    </div>
+    <div class="top-actions">
+      <span class="sync" id="sync"><i></i><em id="syncText" style="font-style:normal">저장 중</em></span>
+      <a class="icon-btn" href="index.html" aria-label="오늘의 말씀으로 전환" title="오늘의 말씀">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17"/><path d="M8 3v4M16 3v4"/><circle cx="12" cy="15" r="1.6" fill="currentColor"/></svg>
+      </a>
+      <button class="icon-btn" id="btnSettings" aria-label="설정">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+        <i class="dot" id="settingsDot"></i>
+      </button>
+    </div>
+  </div>
+
+  <nav class="week-nav">
+    <button class="nav-btn" id="btnPrev" aria-label="이전 주"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
+    <button class="wn-title" id="btnToday" aria-label="이번 주로 이동"><b id="weekTitle"></b><span class="num" id="weekSub"></span></button>
+    <button class="nav-btn" id="btnNext" aria-label="다음 주"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
+  </nav>
+
+  <div class="viewport" id="viewport">
+    <div class="pane" id="pane"></div>
+  </div>
+</div>
+
+<div class="backdrop" id="backdrop"></div>
+
+<!-- 말씀 편집 -->
+<section class="sheet" id="verseSheet" role="dialog" aria-modal="true" aria-labelledby="vsTitle">
+  <div class="grip"></div>
+  <h2 id="vsTitle">말씀</h2>
+  <label class="field"><span>제목</span><input type="text" id="vsName" maxlength="60" autocomplete="off" placeholder="예: 예수 이름의 권세와 하나님의 형상의 완성"></label>
+  <div class="field-row">
+    <label class="field"><span>성경 구절</span><input type="text" id="vsRef" maxlength="40" autocomplete="off" placeholder="요한일서 3:2"></label>
+    <label class="field"><span>날짜</span><input type="date" id="vsDate"></label>
+  </div>
+  <label class="field"><span>본문</span><textarea id="vsText" maxlength="3000" placeholder="말씀 본문을 입력하세요"></textarea></label>
+  <label class="field"><span>본문 링크 (선택 · 비우면 자동)</span><input type="url" id="vsLink" maxlength="300" autocomplete="off" spellcheck="false" placeholder="https://"></label>
+  <div class="sheet-actions">
+    <button class="btn" data-close>취소</button>
+    <button class="btn primary" id="vsSave">저장</button>
+  </div>
+  <div class="tools" id="vsTools"><button class="btn sm danger" id="vsDelete">말씀 삭제</button></div>
+</section>
+
+<!-- 설정 -->
+<section class="sheet" id="settingsSheet" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+  <div class="grip"></div>
+  <h2 id="settingsTitle">GitHub 연결</h2>
+  <p class="set-note" id="ghStatus"></p>
+  <div class="field-row">
+    <label class="field"><span>소유자 (owner)</span><input type="text" id="ghOwner" autocapitalize="off" autocomplete="off" spellcheck="false"></label>
+    <label class="field"><span>저장소 (repo)</span><input type="text" id="ghRepo" autocapitalize="off" autocomplete="off" spellcheck="false"></label>
+  </div>
+  <div class="field-row">
+    <label class="field"><span>브랜치</span><input type="text" id="ghBranch" placeholder="main" autocapitalize="off" autocomplete="off" spellcheck="false"></label>
+    <label class="field"><span>데이터 폴더</span><input type="text" id="ghPath" placeholder="data/weekly" autocapitalize="off" autocomplete="off" spellcheck="false"></label>
+  </div>
+  <label class="field"><span>개인 액세스 토큰</span><input type="password" id="ghToken" placeholder="github_pat_..." autocomplete="off" spellcheck="false"></label>
+  <p class="set-help" id="ghHelp"></p>
+  <div class="sheet-actions">
+    <button class="btn" id="ghClear">토큰 지우기</button>
+    <button class="btn primary" id="ghSave">저장 및 확인</button>
+  </div>
+</section>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(() => {
+  'use strict';
+
+  /* ================= 상수 ================= */
+  const g_objKeys = { strConfig: 'weekly.github', strShared: 'dailyVerse.github', strLedger: 'ledger.github', strCache: 'weekly.cache.v1', strView: 'weekly.view.v1' };
+  const g_strApi = 'https://api.github.com';
+  const g_strDefaultSub = 'weekly';      // 성경 앱 데이터 폴더 아래 하위 폴더
+  const g_nWeekStartDay = 0;            // 주의 시작 요일 (0 = 주일)
+  const g_nStaleMs = 60 * 1000;
+  const g_nMaxVerses = 20;
+  const g_arrModes = [['full', '전체'], ['first', '첫글자'], ['hide', '가리기']];
+  const g_strBibleUrl = 'https://www.bskorea.or.kr/bible/korbibReadpage.php?version=GAE';
+
+  // [대한성서공회 책 코드, 책 이름, 약어]
+  const g_arrBooks = [
+    ['gen', '창세기', '창'], ['exo', '출애굽기', '출'], ['lev', '레위기', '레'], ['num', '민수기', '민'], ['deu', '신명기', '신'],
+    ['jos', '여호수아', '수'], ['jdg', '사사기', '삿'], ['rut', '룻기', '룻'], ['1sa', '사무엘상', '삼상'], ['2sa', '사무엘하', '삼하'],
+    ['1ki', '열왕기상', '왕상'], ['2ki', '열왕기하', '왕하'], ['1ch', '역대상', '대상'], ['2ch', '역대하', '대하'], ['ezr', '에스라', '스'],
+    ['neh', '느헤미야', '느'], ['est', '에스더', '에'], ['job', '욥기', '욥'], ['psa', '시편', '시'], ['pro', '잠언', '잠'],
+    ['ecc', '전도서', '전'], ['sng', '아가', '아'], ['isa', '이사야', '사'], ['jer', '예레미야', '렘'], ['lam', '예레미야애가', '애'],
+    ['ezk', '에스겔', '겔'], ['dan', '다니엘', '단'], ['hos', '호세아', '호'], ['jol', '요엘', '욜'], ['amo', '아모스', '암'],
+    ['oba', '오바댜', '옵'], ['jnh', '요나', '욘'], ['mic', '미가', '미'], ['nam', '나훔', '나'], ['hab', '하박국', '합'],
+    ['zep', '스바냐', '습'], ['hag', '학개', '학'], ['zec', '스가랴', '슥'], ['mal', '말라기', '말'],
+    ['mat', '마태복음', '마'], ['mrk', '마가복음', '막'], ['luk', '누가복음', '눅'], ['jhn', '요한복음', '요'], ['act', '사도행전', '행'],
+    ['rom', '로마서', '롬'], ['1co', '고린도전서', '고전'], ['2co', '고린도후서', '고후'], ['gal', '갈라디아서', '갈'], ['eph', '에베소서', '엡'],
+    ['php', '빌립보서', '빌'], ['col', '골로새서', '골'], ['1th', '데살로니가전서', '살전'], ['2th', '데살로니가후서', '살후'], ['1ti', '디모데전서', '딤전'],
+    ['2ti', '디모데후서', '딤후'], ['tit', '디도서', '딛'], ['phm', '빌레몬서', '몬'], ['heb', '히브리서', '히'], ['jas', '야고보서', '약'],
+    ['1pe', '베드로전서', '벧전'], ['2pe', '베드로후서', '벧후'], ['1jn', '요한일서', '요일'], ['2jn', '요한이서', '요이'], ['3jn', '요한삼서', '요삼'],
+    ['jud', '유다서', '유'], ['rev', '요한계시록', '계'],
+  ];
+  const g_mapBooks = new Map();
+  g_arrBooks.forEach(([strCode, strName, strAbbr]) => { g_mapBooks.set(strName, strCode); g_mapBooks.set(strAbbr, strCode); });
+
+  /* ================= 유틸 ================= */
+  const Q = (strSel) => document.querySelector(strSel);
+  const Pad = (n) => String(n).padStart(2, '0');
+  const DateKeyOf = (dt) => `${dt.getFullYear()}-${Pad(dt.getMonth() + 1)}-${Pad(dt.getDate())}`;
+  const ParseDateKey = (strKey) => { const [nY, nM, nD] = strKey.split('-').map(Number); return new Date(nY, nM - 1, nD); };
+  const IsDateKey = (str) => typeof str === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(str) && DateKeyOf(ParseDateKey(str)) === str;
+  const WeekKeyOf = (dt) => DateKeyOf(new Date(dt.getFullYear(), dt.getMonth(), dt.getDate() - ((dt.getDay() - g_nWeekStartDay + 7) % 7)));
+  const IsWeekKey = (str) => IsDateKey(str) && WeekKeyOf(ParseDateKey(str)) === str;
+  const AddWeek = (strWk, nDelta) => { const dt = ParseDateKey(strWk); return DateKeyOf(new Date(dt.getFullYear(), dt.getMonth(), dt.getDate() + nDelta * 7)); };
+  const WeekEnd = (strWk) => { const dt = ParseDateKey(strWk); return DateKeyOf(new Date(dt.getFullYear(), dt.getMonth(), dt.getDate() + 6)); };
+  const CurrentWeekKey = () => WeekKeyOf(new Date());
+  const DotDate = (strKey) => strKey.replace(/-/g, '.');
+  const Esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const NewId = () => `v${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+  const Clone = (obj) => JSON.parse(JSON.stringify(obj));
+  const SafeUrl = (str) => { try { const objU = new URL(String(str).trim()); return /^https?:$/.test(objU.protocol) ? objU.href.slice(0, 300) : ''; } catch { return ''; } };
+
+  function B64Encode(strText) {
+    const arrBytes = new TextEncoder().encode(strText);
+    let strBin = '';
+    for (let i = 0; i < arrBytes.length; i += 0x8000) strBin += String.fromCharCode.apply(null, arrBytes.subarray(i, i + 0x8000));
+    return btoa(strBin);
+  }
+  function B64Decode(strB64) {
+    const strBin = atob(String(strB64).replace(/\s/g, ''));
+    const arrBytes = new Uint8Array(strBin.length);
+    for (let i = 0; i < strBin.length; i++) arrBytes[i] = strBin.charCodeAt(i);
+    return new TextDecoder().decode(arrBytes);
+  }
+
+  /* ================= 브라우저 저장소 ================= */
+  const g_objLs = (() => { try { const s = window.localStorage; s.getItem('_'); return s; } catch { return null; } })();
+  const g_objPref = {
+    Get(strKey) { try { return g_objLs ? g_objLs.getItem(strKey) : null; } catch { return null; } },
+    Set(strKey, strVal) { try { if (g_objLs) g_objLs.setItem(strKey, strVal); } catch { /* 저장 실패는 무시 */ } },
+  };
+  function ReadJson(strKey) { try { return JSON.parse(g_objPref.Get(strKey) || 'null'); } catch { return null; } }
+
+  /* 카드 접힘·보기 방식: 이 기기에서만 기억 */
+  const g_objViewPref = (() => { const obj = ReadJson(g_objKeys.strView); return { objFold: (obj && obj.fold) || {}, objMode: (obj && obj.mode) || {} }; })();
+  const SaveViewPref = () => g_objPref.Set(g_objKeys.strView, JSON.stringify({ fold: g_objViewPref.objFold, mode: g_objViewPref.objMode }));
+
+  /* ================= 성경 구절 → 본문 링크 ================= */
+  function ParseRef(strRef) {
+    const arrM = String(strRef || '').replace(/\s+/g, ' ').trim().match(/^([가-힣]+)\s*(\d{1,3})\s*(?:[:장]\s*(\d{1,3}))?/);
+    if (!arrM || !g_mapBooks.has(arrM[1])) return null;
+    return { strBook: g_mapBooks.get(arrM[1]), nChap: Number(arrM[2]), nVerse: arrM[3] ? Number(arrM[3]) : 0 };
+  }
+  function VerseLink(objV) {
+    if (objV.link) return objV.link;
+    const objR = ParseRef(objV.ref);
+    if (!objR) return '';
+    return `${g_strBibleUrl}&book=${objR.strBook}&chap=${objR.nChap}${objR.nVerse ? `&sec=${objR.nVerse}` : ''}`;
+  }
+
+  /* ================= 데이터 정규화 ================= */
+  function NormalizeVerse(objRaw, strWk) {
+    if (!objRaw || typeof objRaw !== 'object') return null;
+    const strText = typeof objRaw.text === 'string' ? objRaw.text.trim().slice(0, 3000) : '';
+    const strRef = typeof objRaw.ref === 'string' ? objRaw.ref.trim().slice(0, 40) : '';
+    if (!strText && !strRef) return null;
+    const strDate = IsDateKey(objRaw.date) && WeekKeyOf(ParseDateKey(objRaw.date)) === strWk ? objRaw.date : strWk;
+    return {
+      id: typeof objRaw.id === 'string' && objRaw.id ? objRaw.id.slice(0, 40) : NewId(),
+      title: typeof objRaw.title === 'string' ? objRaw.title.trim().slice(0, 60) : '',
+      date: strDate,
+      ref: strRef,
+      text: strText,
+      link: SafeUrl(objRaw.link || ''),
+      memorized: objRaw.memorized === true,
+    };
+  }
+
+  function NormalizeWeek(objRaw, strWk) {
+    const objOut = { week: strWk, verses: [] };
+    if (!objRaw || typeof objRaw !== 'object') return objOut;
+    const setIds = new Set();
+    (Array.isArray(objRaw.verses) ? objRaw.verses : []).forEach((x) => {
+      if (objOut.verses.length >= g_nMaxVerses) return;
+      const objV = NormalizeVerse(x, strWk);
+      if (!objV) return;
+      if (setIds.has(objV.id)) objV.id = NewId();
+      setIds.add(objV.id);
+      objOut.verses.push(objV);
+    });
+    // 날짜순 정렬 (같은 날짜는 입력 순서 유지)
+    objOut.verses = objOut.verses.map((v, i) => [v, i]).sort((a, b) => (a[0].date < b[0].date ? -1 : a[0].date > b[0].date ? 1 : a[1] - b[1])).map((x) => x[0]);
+    if (typeof objRaw.updatedAt === 'string') objOut.updatedAt = objRaw.updatedAt;
+    return objOut;
+  }
+
+  /* ================= GitHub 연결 정보 ================= */
+  function DetectRepo() {
+    const strHost = location.hostname;
+    if (!/\.github\.io$/i.test(strHost)) return { owner: '', repo: '' };
+    const strOwner = strHost.split('.')[0];
+    const strSeg = location.pathname.split('/').filter(Boolean)[0];
+    return { owner: strOwner, repo: strSeg && !strSeg.includes('.') ? strSeg : strHost };
+  }
+
+  const g_objConfig = { owner: '', repo: '', branch: 'main', path: `data/${g_strDefaultSub}`, token: '', strTokenFrom: '' };
+
+  /** 주간 말씀 전용 설정 → 오늘의 말씀 → 가계부 순으로 연결 정보를 찾음 */
+  function LoadConfig() {
+    const objDetected = DetectRepo();
+    const objOwn = ReadJson(g_objKeys.strConfig) || {};
+    const objShared = ReadJson(g_objKeys.strShared) || {};
+    const objLedger = ReadJson(g_objKeys.strLedger) || {};
+    g_objConfig.owner = objOwn.owner || objShared.owner || objLedger.owner || objDetected.owner;
+    g_objConfig.repo = objOwn.repo || objShared.repo || objLedger.repo || objDetected.repo;
+    g_objConfig.branch = objOwn.branch || objShared.branch || objLedger.branch || 'main';
+    g_objConfig.path = CleanPath(objOwn.path || `${String(objShared.path || 'data').trim().replace(/^\/+|\/+$/g, '') || 'data'}/${g_strDefaultSub}`);
+    g_objConfig.token = objOwn.token || objShared.token || objLedger.token || '';
+    g_objConfig.strTokenFrom = objOwn.token ? 'own' : (objShared.token ? 'verse' : (objLedger.token ? 'ledger' : ''));
+  }
+
+  function SaveConfig() {
+    const objOwn = { owner: g_objConfig.owner, repo: g_objConfig.repo, branch: g_objConfig.branch, path: g_objConfig.path };
+    if (g_objConfig.token && g_objConfig.strTokenFrom === 'own') objOwn.token = g_objConfig.token;
+    g_objPref.Set(g_objKeys.strConfig, JSON.stringify(objOwn));
+  }
+
+  const CleanPath = (str) => String(str || `data/${g_strDefaultSub}`).trim().replace(/^\/+|\/+$/g, '') || `data/${g_strDefaultSub}`;
+  const HasRepo = () => !!(g_objConfig.owner && g_objConfig.repo);
+  const CanWrite = () => HasRepo() && !!g_objConfig.token;
+  const WeekFilePath = (strWk) => `${CleanPath(g_objConfig.path)}/${strWk.slice(0, 4)}/${strWk}.json`;
+  const ContentsUrl = (strPath) => `${g_strApi}/repos/${encodeURIComponent(g_objConfig.owner)}/${encodeURIComponent(g_objConfig.repo)}/contents/${strPath.split('/').map(encodeURIComponent).join('/')}`;
+  const RepoKey = () => `${g_objConfig.owner}/${g_objConfig.repo}@${g_objConfig.branch}:${CleanPath(g_objConfig.path)}`;
+
+  /** 토큰 없이 읽을 때: 성경 앱(index.html)과 같이 이 페이지 기준 상대 경로의 배포 파일 */
+  function PagesFileUrl(strPath) { return `${strPath}?t=${Date.now()}`; }
+
+  async function Gh(strMethod, strUrl, objBody) {
+    try {
+      return await fetch(strUrl, { method: strMethod, cache: 'no-store', headers: { Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28', Authorization: `Bearer ${g_objConfig.token}`, ...(objBody ? { 'Content-Type': 'application/json' } : {}) }, body: objBody ? JSON.stringify(objBody) : undefined });
+    } catch (e) {
+      throw new Error('네트워크에 연결할 수 없어요');
+    }
+  }
+
+  async function ApiError(objRes) {
+    let strMsg = '';
+    try { strMsg = (await objRes.json()).message || ''; } catch { /* 본문 없음 */ }
+    console.error(`GitHub API 오류 ${objRes.status}: ${strMsg}`);
+    if (objRes.status === 401) return new Error('토큰이 올바르지 않거나 만료됐어요');
+    if (objRes.status === 403 && objRes.headers.get('x-ratelimit-remaining') === '0') return new Error('GitHub 요청 한도를 초과했어요. 잠시 후 다시 시도하세요');
+    if (objRes.status === 403) return new Error('토큰에 이 저장소의 쓰기 권한이 없어요');
+    if (objRes.status === 404) return new Error('저장소나 브랜치를 찾을 수 없어요');
+    if (objRes.status === 409) return new Error('다른 곳에서 동시에 수정됐어요. 다시 시도해 주세요');
+    if (objRes.status === 422) return new Error('저장 요청이 거부됐어요. 잠시 후 다시 시도하세요');
+    return new Error(`GitHub 오류 (${objRes.status})`);
+  }
+
+  /* ================= 주 데이터 저장소 ================= */
+  const g_objStore = {
+    mapWeeks: new Map(),    // 주 → { objData|null, strSha, nFetchedAt }
+    setFresh: new Set(),
+    mapInflight: new Map(),
+    strRepo: '',
+
+    Hydrate() {
+      const objCache = ReadJson(g_objKeys.strCache);
+      this.strRepo = RepoKey();
+      if (!objCache || objCache.repo !== this.strRepo || !objCache.weeks) return;
+      Object.entries(objCache.weeks).forEach(([strWk, objW]) => {
+        if (!IsWeekKey(strWk) || !objW) return;
+        this.mapWeeks.set(strWk, { objData: objW.data ? NormalizeWeek(objW.data, strWk) : null, strSha: objW.sha || null, nFetchedAt: 0 });
+      });
+    },
+
+    Persist() {
+      const objWeeks = {};
+      this.mapWeeks.forEach((objW, strWk) => { objWeeks[strWk] = { data: objW.objData, sha: objW.strSha }; });
+      g_objPref.Set(g_objKeys.strCache, JSON.stringify({ repo: RepoKey(), weeks: objWeeks }));
+    },
+
+    Reset() { this.mapWeeks.clear(); this.setFresh.clear(); this.strRepo = RepoKey(); this.Persist(); },
+
+    Put(strWk, strSha, objData) {
+      this.mapWeeks.set(strWk, { objData, strSha, nFetchedAt: Date.now() });
+      this.setFresh.add(strWk);
+      this.Persist();
+    },
+
+    async FetchRemote(strWk) {
+      if (CanWrite()) {
+        const objRes = await Gh('GET', `${ContentsUrl(WeekFilePath(strWk))}?ref=${encodeURIComponent(g_objConfig.branch)}`);
+        if (objRes.status === 404) return { objData: null, strSha: null };
+        if (!objRes.ok) throw await ApiError(objRes);
+        const objJson = await objRes.json();
+        return { objData: NormalizeWeek(JSON.parse(B64Decode(objJson.content)), strWk), strSha: objJson.sha };
+      }
+      if (!HasRepo()) return { objData: null, strSha: null };
+      let objRes;
+      try { objRes = await fetch(PagesFileUrl(WeekFilePath(strWk)), { cache: 'no-store' }); } catch { throw new Error('네트워크에 연결할 수 없어요'); }
+      if (objRes.status === 404) return { objData: null, strSha: null };
+      if (!objRes.ok) throw new Error(`데이터를 불러오지 못했어요 (${objRes.status})`);
+      return { objData: NormalizeWeek(await objRes.json(), strWk), strSha: null };
+    },
+
+    /** 오래된 주만 원격에서 다시 읽음. 내용이 바뀌면 true */
+    async Ensure(strWk, bForce) {
+      const objCur = this.mapWeeks.get(strWk);
+      if (!bForce && objCur && this.setFresh.has(strWk) && Date.now() - objCur.nFetchedAt < g_nStaleMs) return false;
+      if (!this.mapInflight.has(strWk)) {
+        const strBefore = JSON.stringify(objCur ? objCur.objData : undefined);
+        const objPromise = this.FetchRemote(strWk).then((objR) => { this.Put(strWk, objR.strSha, objR.objData); return JSON.stringify(objR.objData) !== strBefore; }).finally(() => this.mapInflight.delete(strWk));
+        this.mapInflight.set(strWk, objPromise);
+      }
+      return this.mapInflight.get(strWk);
+    },
+
+    Known(strWk) { return this.mapWeeks.has(strWk); },
+    Data(strWk) { const objW = this.mapWeeks.get(strWk); return objW ? objW.objData : null; },
+  };
+
+  // 같은 브랜치에 동시 커밋하면 충돌하므로 모든 쓰기를 순차 실행
+  let g_objWriteChain = Promise.resolve();
+  let g_nPending = 0;
+
+  function Serialize(fnRun) {
+    g_nPending += 1;
+    SetSync('저장 중', false);
+    const objPromise = g_objWriteChain.then(fnRun, fnRun);
+    g_objWriteChain = objPromise.catch(() => {});
+    return objPromise.finally(() => { g_nPending -= 1; if (g_nPending === 0) SetSync('', false); });
+  }
+
+  /** 최신 주 파일을 읽어 fnApply로 수정 후 커밋. 충돌(409/422)이면 1회 재시도 */
+  function MutateWeek(strWk, fnApply, strMessage) {
+    return Serialize(async () => {
+      if (!CanWrite()) throw new Error('먼저 GitHub를 연결해 주세요');
+      for (let nTry = 0; nTry < 2; nTry++) {
+        const objCur = await g_objStore.FetchRemote(strWk);
+        const objData = objCur.objData ? Clone(objCur.objData) : NormalizeWeek(null, strWk);
+        fnApply(objData);
+        const objNorm = NormalizeWeek(objData, strWk);
+        objNorm.updatedAt = new Date().toISOString();
+        const strFile = `${JSON.stringify(objNorm, null, 2)}\n`;
+        const objRes = await Gh('PUT', ContentsUrl(WeekFilePath(strWk)), { message: strMessage, content: B64Encode(strFile), branch: g_objConfig.branch, ...(objCur.strSha ? { sha: objCur.strSha } : {}) });
+        if ((objRes.status === 409 || objRes.status === 422) && nTry === 0) { console.warn(`커밋 충돌로 다시 시도합니다: ${strWk}`); continue; }
+        if (!objRes.ok) throw await ApiError(objRes);
+        const objJson = await objRes.json();
+        g_objStore.Put(strWk, objJson.content ? objJson.content.sha : null, objNorm);
+        return;
+      }
+    });
+  }
+
+  /* ================= 상태 ================= */
+  const g_objState = { strWeek: CurrentWeekKey(), objView: NormalizeWeek(null, CurrentWeekKey()), bLoading: false, strError: '' };
+  const g_setPeek = new Set();          // 첫글자·가리기 상태에서 잠시 펼쳐 본 카드
+  const g_objEl = {
+    elPane: Q('#pane'), elViewport: Q('#viewport'), elTitle: Q('#weekTitle'), elSub: Q('#weekSub'),
+    elSync: Q('#sync'), elSyncText: Q('#syncText'), elDot: Q('#settingsDot'), elBackdrop: Q('#backdrop'), elToast: Q('#toast'),
+  };
+
+  function SetSync(strText, bError) {
+    if (!strText && g_nPending > 0) strText = '저장 중';
+    g_objEl.elSync.classList.toggle('on', !!strText);
+    g_objEl.elSync.classList.toggle('err', !!bError);
+    g_objEl.elSyncText.textContent = strText;
+  }
+
+  let g_nToastTimer = 0;
+  function Toast(strMsg) {
+    g_objEl.elToast.textContent = strMsg;
+    g_objEl.elToast.classList.add('on');
+    clearTimeout(g_nToastTimer);
+    g_nToastTimer = setTimeout(() => g_objEl.elToast.classList.remove('on'), 2400);
+  }
+
+  /* ================= 렌더링 ================= */
+  const g_strIconChevron = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg>';
+  const g_strIconRight = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>';
+  const g_strIconCheck = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+
+  function RenderHeader() {
+    const strWk = g_objState.strWeek;
+    const dtStart = ParseDateKey(strWk);
+    const nNth = Math.ceil(dtStart.getDate() / 7);
+    g_objEl.elTitle.textContent = `${dtStart.getMonth() + 1}월 ${nNth}주차`;
+    const strEnd = WeekEnd(strWk);
+    const strRange = `${DotDate(strWk)} – ${strEnd.slice(5).replace('-', '.')}`;
+    const bCurrent = strWk === CurrentWeekKey();
+    g_objEl.elSub.innerHTML = `${strRange} · ${bCurrent ? '이번 주' : '<em>이번 주로 이동</em>'}`;
+    g_objEl.elDot.classList.toggle('on', !CanWrite());
+  }
+
+  /** 보기 방식에 따라 본문을 어절 단위로 가림 (공백·줄바꿈은 그대로 유지) */
+  function RenderText(strText, strMode) {
+    if (strMode === 'full') return Esc(strText).replace(/\n/g, '<br>');
+    return strText.split(/(\s+)/).map((strTok) => {
+      if (!strTok) return '';
+      if (/^\s+$/.test(strTok)) return strTok.includes('\n') ? '<br>' : ' ';
+      const arrChars = Array.from(strTok);
+      if (strMode === 'first') return `${Esc(arrChars[0])}${arrChars.length > 1 ? `<span class="bl">${Esc(arrChars.slice(1).join(''))}</span>` : ''}`;
+      return `<span class="bl">${Esc(strTok)}</span>`;
+    }).join('');
+  }
+
+  function RenderCard(objV) {
+    const strMode = g_objViewPref.objMode[objV.id] || 'full';
+    const bFolded = !!g_objViewPref.objFold[objV.id];
+    const bPeek = g_setPeek.has(objV.id);
+    const strLink = VerseLink(objV);
+    const strModes = g_arrModes.map(([strKey, strLabel]) => `<button type="button" class="mode${strMode === strKey ? ' on' : ''}" data-act="mode" data-mode="${strKey}" aria-pressed="${strMode === strKey}">${strLabel}</button>`).join('');
+    return `<article class="vcard${bFolded ? ' folded' : ''}" data-id="${Esc(objV.id)}">
+      <div class="vc-head">
+        <button type="button" class="vc-title" data-act="fold">${Esc(objV.title || '제목 없음')}</button>
+        <span class="vc-date num">${DotDate(objV.date)}</span>
+        <button type="button" class="vc-fold" data-act="fold" aria-label="${bFolded ? '펼치기' : '접기'}" aria-expanded="${!bFolded}">${g_strIconChevron}</button>
+      </div>
+      ${objV.ref ? `<p class="vc-ref">${Esc(objV.ref)}</p>` : ''}
+      <div class="vc-body">
+        <p class="vc-text${strMode !== 'full' ? ' masked' : ''}${bPeek ? ' peek' : ''}" data-act="peek">${RenderText(objV.text, strMode)}</p>
+        ${strMode !== 'full' ? `<p class="vc-hint">본문을 누르면 ${bPeek ? '다시 가려요' : '잠시 보여요'}</p>` : ''}
+        <div class="vc-modes">${strModes}<button type="button" class="mode memo${objV.memorized ? ' done' : ''}" data-act="memo" aria-pressed="${objV.memorized}"><i>${g_strIconCheck}</i>${objV.memorized ? '암송완료' : '암송하기'}</button></div>
+        <div class="vc-foot">
+          ${strLink ? `<a class="vc-link" href="${Esc(strLink)}" target="_blank" rel="noopener noreferrer">${Esc(objV.ref || '본문')} 본문 보기 ${g_strIconRight}</a>` : '<span class="vc-link off">본문 링크 없음</span>'}
+          <button type="button" class="vc-edit" data-act="edit">편집</button>
+        </div>
+      </div>
+    </article>`;
+  }
+
+  function RenderPane() {
+    RenderHeader();
+    const strWk = g_objState.strWeek;
+    const objData = g_objStore.Data(strWk);
+    g_objState.objView = objData ? Clone(objData) : NormalizeWeek(null, strWk);
+
+    if (g_objState.bLoading && !g_objStore.Known(strWk)) {
+      g_objEl.elPane.innerHTML = `<div class="swipe-hint" aria-hidden="true"><i></i><i class="on"></i><i></i></div><div class="skeleton"><span class="sk-line" style="width:55%"></span><span class="sk-line" style="width:30%"></span><span class="sk-line" style="height:22px"></span><span class="sk-line" style="height:22px;width:85%"></span></div>`;
+      return;
+    }
+
+    const arrVerses = g_objState.objView.verses;
+    const arrHtml = ['<div class="swipe-hint" aria-hidden="true"><i></i><i class="on"></i><i></i></div>'];
+    if (g_objState.strError) arrHtml.push(`<div class="notice">${Esc(g_objState.strError)}<button class="btn sm" data-act="retry">다시 시도</button></div>`);
+    if (arrVerses.length) {
+      arrHtml.push(`<div class="cards">${arrVerses.map(RenderCard).join('')}</div>`);
+      const nDone = arrVerses.filter((v) => v.memorized).length;
+      arrHtml.push(`<p class="week-stat num">이번 주 말씀 ${arrVerses.length}개 · 암송 ${nDone}개</p>`);
+    } else {
+      arrHtml.push(`<div class="empty"><b>등록된 말씀이 없어요</b>${HasRepo() ? '아래에서 이 주의 말씀을 추가하세요.' : '오른쪽 위 연결 버튼에서 GitHub 저장소를 먼저 연결하세요.'}</div>`);
+    }
+    if (arrVerses.length < g_nMaxVerses) arrHtml.push(`<button class="add-row" data-act="add"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>말씀 추가</button>`);
+    g_objEl.elPane.innerHTML = arrHtml.join('');
+  }
+
+  /* ================= 데이터 불러오기 ================= */
+  let g_nLoadSeq = 0;
+  async function Load(bForce) {
+    const nSeq = ++g_nLoadSeq;
+    const strWk = g_objState.strWeek;
+    g_objState.strError = '';
+    if (!HasRepo()) { g_objState.bLoading = false; RenderPane(); return; }
+    g_objState.bLoading = true;
+    if (!g_objStore.Known(strWk)) RenderPane();
+    try {
+      const bChanged = await g_objStore.Ensure(strWk, bForce);
+      if (nSeq !== g_nLoadSeq) return;
+      g_objState.bLoading = false;
+      if (bChanged || !g_objEl.elPane.querySelector('.cards, .empty')) RenderPane();
+    } catch (e) {
+      console.error('주간 말씀 불러오기 실패', e);
+      if (nSeq !== g_nLoadSeq) return;
+      g_objState.bLoading = false;
+      g_objState.strError = e.message;
+      RenderPane();
+    }
+    // 옆 주 미리 읽기 (스와이프 시 바로 표시)
+    if (nSeq === g_nLoadSeq) [AddWeek(strWk, -1), AddWeek(strWk, 1)].forEach((strAdj) => { if (!g_objStore.Known(strAdj)) g_objStore.Ensure(strAdj, false).catch(() => {}); });
+  }
+
+  /* ================= 변경 (낙관적 반영 후 커밋) ================= */
+  function Commit(fnApply, strMessage) {
+    const strWk = g_objState.strWeek;
+    if (!CanWrite()) { Toast('먼저 GitHub를 연결해 주세요'); OpenSettings(); return Promise.resolve(false); }
+    const objLocal = Clone(g_objState.objView);
+    fnApply(objLocal);
+    g_objStore.mapWeeks.set(strWk, { objData: NormalizeWeek(objLocal, strWk), strSha: (g_objStore.mapWeeks.get(strWk) || {}).strSha || null, nFetchedAt: 0 });
+    if (g_objState.strWeek === strWk) RenderPane();
+    return MutateWeek(strWk, fnApply, `주간 말씀 ${strWk} · ${strMessage}`).then(() => {
+      if (g_objState.strWeek === strWk) RenderPane();
+      return true;
+    }).catch((e) => {
+      console.error('저장 실패', e);
+      SetSync('저장 실패', true);
+      Toast(e.message);
+      g_objStore.setFresh.delete(strWk);
+      g_objStore.Ensure(strWk, true).then(() => { if (g_objState.strWeek === strWk) RenderPane(); }).catch(() => {});
+      return false;
+    });
+  }
+
+  /* ================= 시트 공통 ================= */
+  let g_elOpenSheet = null;
+  function OpenSheet(elSheet) {
+    if (g_elOpenSheet) g_elOpenSheet.classList.remove('on');
+    g_elOpenSheet = elSheet;
+    g_objEl.elBackdrop.classList.add('on');
+    elSheet.classList.add('on');
+  }
+  function CloseSheet() {
+    if (!g_elOpenSheet) return;
+    if (document.activeElement && g_elOpenSheet.contains(document.activeElement)) document.activeElement.blur();
+    g_elOpenSheet.classList.remove('on');
+    g_objEl.elBackdrop.classList.remove('on');
+    g_elOpenSheet = null;
+  }
+  g_objEl.elBackdrop.addEventListener('click', CloseSheet);
+  document.querySelectorAll('[data-close]').forEach((elBtn) => elBtn.addEventListener('click', CloseSheet));
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') { CloseSheet(); return; }
+    if (g_elOpenSheet || /INPUT|TEXTAREA/.test((document.activeElement || {}).tagName || '')) return;
+    if (e.key === 'ArrowLeft') GoWeek(-1);
+    if (e.key === 'ArrowRight') GoWeek(1);
+  });
+
+  /* ================= 말씀 편집 시트 ================= */
+  const g_objVerseSheet = { elSheet: Q('#verseSheet'), strId: '' };
+
+  function OpenVerse(strId) {
+    const strWk = g_objState.strWeek;
+    const objV = strId ? g_objState.objView.verses.find((x) => x.id === strId) : null;
+    if (strId && !objV) return;
+    g_objVerseSheet.strId = strId || '';
+    const strToday = DateKeyOf(new Date());
+    const strDefaultDate = WeekKeyOf(new Date()) === strWk ? strToday : strWk;
+    Q('#vsTitle').textContent = objV ? '말씀 편집' : '새 말씀';
+    Q('#vsName').value = objV ? objV.title : '';
+    Q('#vsRef').value = objV ? objV.ref : '';
+    Q('#vsText').value = objV ? objV.text : '';
+    Q('#vsLink').value = objV ? objV.link : '';
+    Q('#vsDate').min = strWk;
+    Q('#vsDate').max = WeekEnd(strWk);
+    Q('#vsDate').value = objV ? objV.date : strDefaultDate;
+    Q('#vsTools').style.display = objV ? '' : 'none';
+    OpenSheet(g_objVerseSheet.elSheet);
+    if (!objV) setTimeout(() => Q('#vsName').focus(), 320);
+  }
+
+  Q('#vsSave').addEventListener('click', () => {
+    const strWk = g_objState.strWeek;
+    const strTitle = Q('#vsName').value.trim().slice(0, 60);
+    const strRef = Q('#vsRef').value.trim().slice(0, 40);
+    const strText = Q('#vsText').value.trim().slice(0, 3000);
+    const strLinkRaw = Q('#vsLink').value.trim();
+    const strLink = strLinkRaw ? SafeUrl(strLinkRaw) : '';
+    const strDate = Q('#vsDate').value;
+    if (!strText) { Toast('본문을 입력해 주세요'); Q('#vsText').focus(); return; }
+    if (strLinkRaw && !strLink) { Toast('링크는 http:// 또는 https://로 시작해야 해요'); Q('#vsLink').focus(); return; }
+    if (!IsDateKey(strDate) || WeekKeyOf(ParseDateKey(strDate)) !== strWk) { Toast(`날짜는 ${DotDate(strWk)} ~ ${DotDate(WeekEnd(strWk))} 사이로 골라 주세요`); Q('#vsDate').focus(); return; }
+    const objPatch = { title: strTitle, ref: strRef, text: strText, link: strLink, date: strDate };
+    const strId = g_objVerseSheet.strId;
+    const strLabel = strRef || strTitle || '말씀';
+    CloseSheet();
+    if (strId) {
+      const objOld = g_objState.objView.verses.find((x) => x.id === strId);
+      if (objOld && JSON.stringify({ ...objOld, ...objPatch }) === JSON.stringify(objOld)) return;
+      Commit((objD) => { const objIt = objD.verses.find((x) => x.id === strId); if (objIt) Object.assign(objIt, objPatch); else objD.verses.push({ id: strId, memorized: false, ...objPatch }); }, `${strLabel} 수정`);
+    } else {
+      const strNewId = NewId();
+      Commit((objD) => { objD.verses.push({ id: strNewId, memorized: false, ...objPatch }); }, `${strLabel} 추가`);
+    }
+  });
+
+  Q('#vsDelete').addEventListener('click', () => {
+    const strId = g_objVerseSheet.strId;
+    const objV = g_objState.objView.verses.find((x) => x.id === strId);
+    if (!objV || !confirm(`'${objV.ref || objV.title || '말씀'}'을(를) 이 주에서 삭제할까요?`)) return;
+    CloseSheet();
+    delete g_objViewPref.objFold[strId];
+    delete g_objViewPref.objMode[strId];
+    SaveViewPref();
+    Commit((objD) => { objD.verses = objD.verses.filter((x) => x.id !== strId); }, `${objV.ref || objV.title || '말씀'} 삭제`);
+  });
+
+  /* ================= 설정 시트 ================= */
+  function SetGhStatus(strMsg, bWarn) {
+    const elS = Q('#ghStatus');
+    elS.textContent = strMsg;
+    elS.classList.toggle('warn', !!bWarn);
+  }
+
+  function OpenSettings() {
+    Q('#ghOwner').value = g_objConfig.owner;
+    Q('#ghRepo').value = g_objConfig.repo;
+    Q('#ghBranch').value = g_objConfig.branch;
+    Q('#ghPath').value = g_objConfig.path;
+    Q('#ghToken').value = '';
+    const objFrom = { own: '저장된 토큰 사용 중', verse: '오늘의 말씀 토큰 사용 중', ledger: '가계부 토큰 사용 중' };
+    Q('#ghToken').placeholder = g_objConfig.token ? objFrom[g_objConfig.strTokenFrom] : 'github_pat_...';
+    Q('#ghHelp').textContent = g_objConfig.strTokenFrom === 'verse' || g_objConfig.strTokenFrom === 'ledger'
+      ? `같은 주소의 ${g_objConfig.strTokenFrom === 'verse' ? '오늘의 말씀' : '가계부'}에 저장된 토큰을 그대로 쓰고 있어요. 다른 토큰을 쓰려면 새로 입력하세요.`
+      : 'Fine-grained 토큰에서 이 저장소를 선택하고 Contents 권한을 Read and write로 발급하세요. 토큰은 이 기기 브라우저에만 저장돼요.';
+    if (!HasRepo()) SetGhStatus('저장소 정보를 입력하세요. github.io 주소로 접속하면 자동으로 채워져요.', true);
+    else if (!g_objConfig.token) SetGhStatus('토큰이 없어 읽기 전용이에요. GitHub Pages에 배포된 내용을 보여줘요.', true);
+    else SetGhStatus(`연결됨 · ${g_objConfig.owner}/${g_objConfig.repo} (${g_objConfig.branch}) · ${CleanPath(g_objConfig.path)}`, false);
+    OpenSheet(Q('#settingsSheet'));
+  }
+
+  Q('#ghSave').addEventListener('click', async () => {
+    const elBtn = Q('#ghSave');
+    const strToken = Q('#ghToken').value.trim();
+    g_objConfig.owner = Q('#ghOwner').value.trim();
+    g_objConfig.repo = Q('#ghRepo').value.trim();
+    g_objConfig.branch = Q('#ghBranch').value.trim() || 'main';
+    g_objConfig.path = CleanPath(Q('#ghPath').value);
+    if (strToken) { g_objConfig.token = strToken; g_objConfig.strTokenFrom = 'own'; }
+    SaveConfig();
+    if (g_objStore.strRepo !== RepoKey()) g_objStore.Reset();
+    if (!HasRepo()) { SetGhStatus('소유자와 저장소를 입력하세요', true); return; }
+    if (!g_objConfig.token) { SetGhStatus('토큰 없이 읽기 전용으로 저장했어요', true); RenderHeader(); Load(true); return; }
+    elBtn.disabled = true;
+    SetGhStatus('연결 확인 중…', false);
+    try {
+      const strRepoApi = `${g_strApi}/repos/${encodeURIComponent(g_objConfig.owner)}/${encodeURIComponent(g_objConfig.repo)}`;
+      const objRepoRes = await Gh('GET', strRepoApi);
+      if (!objRepoRes.ok) throw await ApiError(objRepoRes);
+      const objRepo = await objRepoRes.json();
+      if (objRepo.permissions && objRepo.permissions.push === false) throw new Error('토큰에 이 저장소의 쓰기 권한이 없어요');
+      const objBrRes = await Gh('GET', `${strRepoApi}/branches/${encodeURIComponent(g_objConfig.branch)}`);
+      if (!objBrRes.ok) throw await ApiError(objBrRes);
+      SetGhStatus(`연결됨 · ${g_objConfig.owner}/${g_objConfig.repo} (${g_objConfig.branch}) · ${CleanPath(g_objConfig.path)}`, false);
+      Toast('GitHub에 연결했어요');
+      g_objStore.setFresh.clear();
+      RenderHeader();
+      Load(true);
+    } catch (e) {
+      console.error('연결 확인 실패', e);
+      SetGhStatus(e.message, true);
+    } finally {
+      elBtn.disabled = false;
+    }
+  });
+
+  Q('#ghClear').addEventListener('click', () => {
+    if (!g_objConfig.token) return;
+    if (g_objConfig.strTokenFrom !== 'own') { Toast(`${g_objConfig.strTokenFrom === 'verse' ? '오늘의 말씀' : '가계부'}의 토큰이에요. 그 앱에서 지워 주세요`); return; }
+    if (!confirm('이 기기에서 주간 말씀 토큰을 지울까요?\nGitHub에 저장된 말씀은 그대로 남아요.')) return;
+    g_objConfig.token = '';
+    g_objConfig.strTokenFrom = '';
+    SaveConfig();
+    LoadConfig();
+    g_objStore.setFresh.clear();
+    OpenSettings();
+    RenderHeader();
+    Load(true);
+  });
+
+  /* ================= 화면 이벤트 ================= */
+  let g_bSuppressClick = false;
+  g_objEl.elPane.addEventListener('click', (e) => {
+    if (g_bSuppressClick) return;
+    const elAct = e.target.closest('[data-act]');
+    if (!elAct) return;
+    const strAct = elAct.dataset.act;
+    if (strAct === 'add') { OpenVerse(''); return; }
+    if (strAct === 'retry') { Load(true); return; }
+    if (e.target.closest('a')) return;
+    const elCard = elAct.closest('.vcard');
+    if (!elCard) return;
+    const strId = elCard.dataset.id;
+    const objV = g_objState.objView.verses.find((x) => x.id === strId);
+    if (!objV) return;
+    if (strAct === 'fold') {
+      if (g_objViewPref.objFold[strId]) delete g_objViewPref.objFold[strId]; else g_objViewPref.objFold[strId] = 1;
+      SaveViewPref();
+      RenderPane();
+    } else if (strAct === 'mode') {
+      if (elAct.dataset.mode === 'full') delete g_objViewPref.objMode[strId]; else g_objViewPref.objMode[strId] = elAct.dataset.mode;
+      g_setPeek.delete(strId);
+      SaveViewPref();
+      RenderPane();
+    } else if (strAct === 'peek') {
+      if ((g_objViewPref.objMode[strId] || 'full') === 'full') return;
+      if (g_setPeek.has(strId)) g_setPeek.delete(strId); else g_setPeek.add(strId);
+      RenderPane();
+    } else if (strAct === 'memo') {
+      const bNext = !objV.memorized;
+      Commit((objD) => { const objIt = objD.verses.find((x) => x.id === strId); if (objIt) objIt.memorized = bNext; }, `${objV.ref || objV.title || '말씀'} ${bNext ? '암송 완료' : '암송 해제'}`).then((bOk) => { if (bOk && bNext) Toast('암송 완료로 표시했어요'); });
+    } else if (strAct === 'edit') {
+      OpenVerse(strId);
+    }
+  });
+  Q('#btnSettings').addEventListener('click', OpenSettings);
+  Q('#btnPrev').addEventListener('click', () => GoWeek(-1));
+  Q('#btnNext').addEventListener('click', () => GoWeek(1));
+  Q('#btnToday').addEventListener('click', () => { const strNow = CurrentWeekKey(); if (strNow !== g_objState.strWeek) GoWeek(strNow > g_objState.strWeek ? 1 : -1, strNow); });
+
+  /* ================= 스와이프 주 이동 ================= */
+  let g_bAnimating = false;
+  const SetPaneX = (nX, bAnim) => { g_objEl.elPane.classList.toggle('anim', !!bAnim); g_objEl.elPane.style.transform = nX ? `translate3d(${nX}px,0,0)` : ''; };
+
+  function GoWeek(nDir, strTarget) {
+    if (g_bAnimating) return;
+    g_bAnimating = true;
+    const nW = g_objEl.elViewport.clientWidth || 360;
+    SetPaneX(-nDir * nW, true);
+    g_objEl.elPane.style.opacity = '0.2';
+    setTimeout(() => {
+      g_objState.strWeek = strTarget || AddWeek(g_objState.strWeek, nDir);
+      g_objState.strError = '';
+      g_objState.bLoading = HasRepo() && !g_objStore.Known(g_objState.strWeek);
+      g_setPeek.clear();
+      RenderPane();
+      SetPaneX(nDir * nW, false);
+      void g_objEl.elPane.offsetWidth;
+      SetPaneX(0, true);
+      g_objEl.elPane.style.opacity = '';
+      window.scrollTo({ top: 0, behavior: 'auto' });
+      setTimeout(() => { g_bAnimating = false; g_objEl.elPane.classList.remove('anim'); }, 250);
+      Load(false);
+    }, 200);
+  }
+
+  (() => {
+    let objDrag = null;
+    const elV = g_objEl.elViewport;
+    elV.addEventListener('pointerdown', (e) => {
+      if (g_bAnimating || (e.pointerType === 'mouse' && e.button !== 0)) return;
+      objDrag = { nX: e.clientX, nY: e.clientY, nT: performance.now(), strAxis: '', nDx: 0, nId: e.pointerId };
+    });
+    elV.addEventListener('pointermove', (e) => {
+      if (!objDrag || e.pointerId !== objDrag.nId) return;
+      const nDx = e.clientX - objDrag.nX;
+      const nDy = e.clientY - objDrag.nY;
+      if (!objDrag.strAxis) {
+        if (Math.abs(nDx) < 8 && Math.abs(nDy) < 8) return;
+        objDrag.strAxis = Math.abs(nDx) > Math.abs(nDy) * 1.2 ? 'x' : 'y';
+        if (objDrag.strAxis === 'x') { try { elV.setPointerCapture(e.pointerId); } catch { /* 무시 */ } }
+      }
+      if (objDrag.strAxis !== 'x') return;
+      objDrag.nDx = nDx;
+      SetPaneX(nDx * 0.92, false);
+      g_objEl.elPane.style.opacity = String(1 - Math.min(Math.abs(nDx) / (elV.clientWidth * 1.6), 0.5));
+    });
+    const fnEnd = (e) => {
+      if (!objDrag || e.pointerId !== objDrag.nId) return;
+      const objD = objDrag;
+      objDrag = null;
+      if (objD.strAxis !== 'x') return;
+      g_bSuppressClick = true;
+      setTimeout(() => { g_bSuppressClick = false; }, 300);
+      const nVel = Math.abs(objD.nDx) / Math.max(performance.now() - objD.nT, 1);
+      if (e.type !== 'pointercancel' && (Math.abs(objD.nDx) > elV.clientWidth * 0.22 || (nVel > 0.45 && Math.abs(objD.nDx) > 30))) { GoWeek(objD.nDx < 0 ? 1 : -1); return; }
+      SetPaneX(0, true);
+      g_objEl.elPane.style.opacity = '';
+    };
+    elV.addEventListener('pointerup', fnEnd);
+    elV.addEventListener('pointercancel', fnEnd);
+    // 스와이프 후 링크로 이동하지 않도록 차단
+    elV.addEventListener('click', (e) => { if (g_bSuppressClick && e.target.closest('a')) e.preventDefault(); }, true);
+  })();
+
+  /* ================= 시작 ================= */
+  LoadConfig();
+  g_objStore.Hydrate();
+  g_objState.bLoading = HasRepo() && !g_objStore.Known(g_objState.strWeek);
+  RenderPane();
+  Load(false);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && !g_nPending) Load(false); });
+  window.addEventListener('storage', (e) => { if ([g_objKeys.strConfig, g_objKeys.strShared, g_objKeys.strLedger].includes(e.key)) { LoadConfig(); RenderHeader(); } });
+})();
+</script>
+</body>
+</html>
