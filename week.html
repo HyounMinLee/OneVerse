@@ -101,8 +101,7 @@ svg{display:block}
 .vcard::before{content:'';position:absolute;z-index:-1;width:240px;height:240px;right:-70px;top:-90px;border-radius:50%;background:#fff;opacity:.55;filter:blur(34px)}
 @media (prefers-color-scheme: dark){.vcard::before{background:var(--gacc);opacity:.12}}
 .vc-head{display:flex;align-items:center;gap:10px}
-.vc-title{flex:1;min-width:0;font-size:16px;font-weight:750;letter-spacing:-.03em;text-align:left;line-height:1.4;word-break:keep-all}
-.vc-date{flex-shrink:0;font-size:14px;font-weight:600;color:var(--muted)}
+.vc-title{display:block;flex:1;min-width:0;font-size:16px;font-weight:750;letter-spacing:-.03em;text-align:left;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .vc-fold{flex:0 0 32px;width:32px;height:32px;margin-right:-6px;display:grid;place-items:center;border-radius:50%;color:var(--gacc)}
 .vc-fold:active{background:var(--glass)}
 .vc-fold svg{width:20px;height:20px;transition:transform .2s}
@@ -111,7 +110,7 @@ svg{display:block}
   -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);font-size:14px;font-weight:750;color:var(--gacc);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .vc-body{margin-top:18px}
 .vcard.folded .vc-body{display:none}
-.vc-text{margin:0 2px;font-family:var(--serif);font-size:20px;line-height:1.85;letter-spacing:-.025em;word-break:keep-all;overflow-wrap:anywhere;cursor:default}
+.vc-text{margin:0 2px;font-family:var(--serif);font-size:var(--vfs,20px);line-height:1.85;letter-spacing:-.025em;word-break:keep-all;overflow-wrap:anywhere;cursor:default}
 .vc-text.masked{cursor:pointer}
 .vc-text .bl{color:transparent;background:color-mix(in srgb,var(--gacc) 18%,transparent);border-radius:6px;-webkit-box-decoration-break:clone;box-decoration-break:clone;transition:color .15s,background-color .15s}
 .vc-text.peek .bl{color:var(--muted);background:transparent}
@@ -120,10 +119,7 @@ svg{display:block}
 .mode{flex:1 1 0;min-width:0;height:48px;border-radius:16px;border:1.5px solid transparent;background:var(--glass);font-size:15px;font-weight:700;color:var(--muted);white-space:nowrap}
 .mode.on{border-color:var(--gacc);color:var(--gacc);background:var(--glass)}
 .mode:active{transform:scale(.97)}
-.vc-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:18px}
-.vc-link{display:inline-flex;align-items:center;gap:4px;min-width:0;font-size:15px;font-weight:700;color:var(--gacc);text-decoration:none}
-.vc-link svg{width:16px;height:16px;flex-shrink:0}
-.vc-link.off{color:var(--muted);font-weight:600}
+.vc-foot{display:flex;align-items:center;justify-content:flex-end;gap:10px;margin-top:18px}
 .vc-edit{flex-shrink:0;display:inline-flex;align-items:center;height:36px;padding:0 14px;border-radius:999px;background:var(--glass);font-size:13px;font-weight:700}
 
 .empty{padding:34px 20px;border-radius:30px;background:linear-gradient(180deg,color-mix(in srgb,var(--ga) 75%,var(--surface)) 0%,var(--surface) 72%);box-shadow:var(--shadow);text-align:center;color:var(--muted);font-size:14px;line-height:1.6;word-break:keep-all}
@@ -176,7 +172,16 @@ svg{display:block}
   padding:11px 18px;border-radius:14px;background:var(--text);color:var(--bg);font-size:14px;font-weight:650;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;word-break:keep-all;text-align:center}
 #toast.on{opacity:1;transform:translate(-50%,0)}
 
-@media (max-width:380px){.vcard{padding:20px 16px 16px}.vc-text{font-size:19px}}
+/* 글자 크기 조절 */
+.fs-ctl{display:inline-flex;align-items:center;height:40px;padding:0 4px;border-radius:20px;background:var(--glass);border:1px solid var(--glass-2);
+  -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);box-shadow:var(--shadow)}
+.fs-ctl button{width:34px;height:32px;display:grid;place-items:center;border-radius:16px;font-weight:750;letter-spacing:-.04em;color:var(--text)}
+.fs-ctl button:active:not(:disabled){background:var(--glass-2);transform:scale(.94)}
+.fs-ctl button:disabled{opacity:.35;cursor:default}
+.fs-ctl .fs-dn{font-size:13px}
+.fs-ctl .fs-up{font-size:18px}
+
+@media (max-width:380px){.vcard{padding:20px 16px 16px}}
 @media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
 </style>
 </head>
@@ -191,6 +196,10 @@ svg{display:block}
     </div>
     <div class="top-actions">
       <span class="sync" id="sync"><i></i><em id="syncText" style="font-style:normal">저장 중</em></span>
+      <div class="fs-ctl" role="group" aria-label="본문 글자 크기">
+        <button type="button" class="fs-dn" id="btnFontDown" aria-label="글자 작게" title="글자 작게">가</button>
+        <button type="button" class="fs-up" id="btnFontUp" aria-label="글자 크게" title="글자 크게">가</button>
+      </div>
       <a class="icon-btn" href="index.html" aria-label="오늘의 말씀으로 전환" title="오늘의 말씀">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17"/><path d="M8 3v4M16 3v4"/><circle cx="12" cy="15" r="1.6" fill="currentColor"/></svg>
       </a>
@@ -219,12 +228,8 @@ svg{display:block}
   <div class="grip"></div>
   <h2 id="vsTitle">말씀</h2>
   <label class="field"><span>제목</span><input type="text" id="vsName" maxlength="60" autocomplete="off" placeholder="예: 예수 이름의 권세와 하나님의 형상의 완성"></label>
-  <div class="field-row">
-    <label class="field"><span>성경 구절</span><input type="text" id="vsRef" maxlength="40" autocomplete="off" placeholder="요한일서 3:2"></label>
-    <label class="field"><span>날짜</span><input type="date" id="vsDate"></label>
-  </div>
+  <label class="field"><span>성경 구절</span><input type="text" id="vsRef" maxlength="40" autocomplete="off" placeholder="요한일서 3:2"></label>
   <label class="field"><span>본문</span><textarea id="vsText" maxlength="3000" placeholder="말씀 본문을 입력하세요"></textarea></label>
-  <label class="field"><span>본문 링크 (선택 · 비우면 자동)</span><input type="url" id="vsLink" maxlength="300" autocomplete="off" spellcheck="false" placeholder="https://"></label>
   <div class="sheet-actions">
     <button class="btn" data-close>취소</button>
     <button class="btn primary" id="vsSave">저장</button>
@@ -277,28 +282,6 @@ svg{display:block}
     { a: '#fce3e9', b: '#f3c8d4', acc: '#a8456a', da: '#36202a', db: '#2c1b25', dacc: '#f0a0bd' },
     { a: '#d6f0ed', b: '#bbe2dc', acc: '#2b7970', da: '#1a2f2d', db: '#172826', dacc: '#8ad5cb' },
   ];
-  const g_strBibleUrl = 'https://www.bskorea.or.kr/bible/korbibReadpage.php?version=GAE';
-
-  // [대한성서공회 책 코드, 책 이름, 약어]
-  const g_arrBooks = [
-    ['gen', '창세기', '창'], ['exo', '출애굽기', '출'], ['lev', '레위기', '레'], ['num', '민수기', '민'], ['deu', '신명기', '신'],
-    ['jos', '여호수아', '수'], ['jdg', '사사기', '삿'], ['rut', '룻기', '룻'], ['1sa', '사무엘상', '삼상'], ['2sa', '사무엘하', '삼하'],
-    ['1ki', '열왕기상', '왕상'], ['2ki', '열왕기하', '왕하'], ['1ch', '역대상', '대상'], ['2ch', '역대하', '대하'], ['ezr', '에스라', '스'],
-    ['neh', '느헤미야', '느'], ['est', '에스더', '에'], ['job', '욥기', '욥'], ['psa', '시편', '시'], ['pro', '잠언', '잠'],
-    ['ecc', '전도서', '전'], ['sng', '아가', '아'], ['isa', '이사야', '사'], ['jer', '예레미야', '렘'], ['lam', '예레미야애가', '애'],
-    ['ezk', '에스겔', '겔'], ['dan', '다니엘', '단'], ['hos', '호세아', '호'], ['jol', '요엘', '욜'], ['amo', '아모스', '암'],
-    ['oba', '오바댜', '옵'], ['jnh', '요나', '욘'], ['mic', '미가', '미'], ['nam', '나훔', '나'], ['hab', '하박국', '합'],
-    ['zep', '스바냐', '습'], ['hag', '학개', '학'], ['zec', '스가랴', '슥'], ['mal', '말라기', '말'],
-    ['mat', '마태복음', '마'], ['mrk', '마가복음', '막'], ['luk', '누가복음', '눅'], ['jhn', '요한복음', '요'], ['act', '사도행전', '행'],
-    ['rom', '로마서', '롬'], ['1co', '고린도전서', '고전'], ['2co', '고린도후서', '고후'], ['gal', '갈라디아서', '갈'], ['eph', '에베소서', '엡'],
-    ['php', '빌립보서', '빌'], ['col', '골로새서', '골'], ['1th', '데살로니가전서', '살전'], ['2th', '데살로니가후서', '살후'], ['1ti', '디모데전서', '딤전'],
-    ['2ti', '디모데후서', '딤후'], ['tit', '디도서', '딛'], ['phm', '빌레몬서', '몬'], ['heb', '히브리서', '히'], ['jas', '야고보서', '약'],
-    ['1pe', '베드로전서', '벧전'], ['2pe', '베드로후서', '벧후'], ['1jn', '요한일서', '요일'], ['2jn', '요한이서', '요이'], ['3jn', '요한삼서', '요삼'],
-    ['jud', '유다서', '유'], ['rev', '요한계시록', '계'],
-  ];
-  const g_mapBooks = new Map();
-  g_arrBooks.forEach(([strCode, strName, strAbbr]) => { g_mapBooks.set(strName, strCode); g_mapBooks.set(strAbbr, strCode); });
-
   /* ================= 유틸 ================= */
   const Q = (strSel) => document.querySelector(strSel);
   const Pad = (n) => String(n).padStart(2, '0');
@@ -314,7 +297,6 @@ svg{display:block}
   const Esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const NewId = () => `v${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
   const Clone = (obj) => JSON.parse(JSON.stringify(obj));
-  const SafeUrl = (str) => { try { const objU = new URL(String(str).trim()); return /^https?:$/.test(objU.protocol) ? objU.href.slice(0, 300) : ''; } catch { return ''; } };
 
   function B64Encode(strText) {
     const arrBytes = new TextEncoder().encode(strText);
@@ -337,21 +319,31 @@ svg{display:block}
   };
   function ReadJson(strKey) { try { return JSON.parse(g_objPref.Get(strKey) || 'null'); } catch { return null; } }
 
-  /* 카드 접힘·보기 방식: 이 기기에서만 기억 */
-  const g_objViewPref = (() => { const obj = ReadJson(g_objKeys.strView); return { objFold: (obj && obj.fold) || {}, objMode: (obj && obj.mode) || {} }; })();
-  const SaveViewPref = () => g_objPref.Set(g_objKeys.strView, JSON.stringify({ fold: g_objViewPref.objFold, mode: g_objViewPref.objMode }));
+  /* 본문 글자 크기 범위(px) */
+  const g_nFontMin = 14;
+  const g_nFontMax = 32;
+  const g_nFontStep = 2;
+  const g_nFontDefault = 20;
+  const ClampFont = (n) => (Number.isFinite(n) ? Math.min(g_nFontMax, Math.max(g_nFontMin, Math.round(n))) : g_nFontDefault);
 
-  /* ================= 성경 구절 → 본문 링크 ================= */
-  function ParseRef(strRef) {
-    const arrM = String(strRef || '').replace(/\s+/g, ' ').trim().match(/^([가-힣]+)\s*(\d{1,3})\s*(?:[:장]\s*(\d{1,3}))?/);
-    if (!arrM || !g_mapBooks.has(arrM[1])) return null;
-    return { strBook: g_mapBooks.get(arrM[1]), nChap: Number(arrM[2]), nVerse: arrM[3] ? Number(arrM[3]) : 0 };
+  /* 카드 접힘·보기 방식·글자 크기: 이 기기에서만 기억 */
+  const g_objViewPref = (() => { const obj = ReadJson(g_objKeys.strView); return { objFold: (obj && obj.fold) || {}, objMode: (obj && obj.mode) || {}, nFont: ClampFont(obj && Number(obj.fs)) }; })();
+  const SaveViewPref = () => g_objPref.Set(g_objKeys.strView, JSON.stringify({ fold: g_objViewPref.objFold, mode: g_objViewPref.objMode, fs: g_objViewPref.nFont }));
+
+  /** 본문 글자 크기를 CSS 변수로 적용 (다시 그리지 않아도 즉시 반영) */
+  function ApplyFontSize() {
+    document.documentElement.style.setProperty('--vfs', `${g_objViewPref.nFont}px`);
+    const elDn = document.getElementById('btnFontDown');
+    const elUp = document.getElementById('btnFontUp');
+    if (elDn) elDn.disabled = g_objViewPref.nFont <= g_nFontMin;
+    if (elUp) elUp.disabled = g_objViewPref.nFont >= g_nFontMax;
   }
-  function VerseLink(objV) {
-    if (objV.link) return objV.link;
-    const objR = ParseRef(objV.ref);
-    if (!objR) return '';
-    return `${g_strBibleUrl}&book=${objR.strBook}&chap=${objR.nChap}${objR.nVerse ? `&sec=${objR.nVerse}` : ''}`;
+  function ChangeFontSize(nDelta) {
+    const nNext = ClampFont(g_objViewPref.nFont + nDelta);
+    if (nNext === g_objViewPref.nFont) return;
+    g_objViewPref.nFont = nNext;
+    SaveViewPref();
+    ApplyFontSize();
   }
 
   /* ================= 데이터 정규화 ================= */
@@ -367,7 +359,6 @@ svg{display:block}
       date: strDate,
       ref: strRef,
       text: strText,
-      link: SafeUrl(objRaw.link || ''),
     };
   }
 
@@ -572,7 +563,6 @@ svg{display:block}
 
   /* ================= 렌더링 ================= */
   const g_strIconChevron = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg>';
-  const g_strIconRight = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>';
   const ModeOf = (strId) => (g_objViewPref.objMode[strId] === 'hide' ? 'hide' : 'full');
 
   /** 오늘의 말씀과 같은 팔레트를 주마다 돌아가며 적용 */
@@ -612,12 +602,10 @@ svg{display:block}
     const strMode = ModeOf(objV.id);
     const bFolded = !!g_objViewPref.objFold[objV.id];
     const bPeek = g_setPeek.has(objV.id);
-    const strLink = VerseLink(objV);
     const strModes = g_arrModes.map(([strKey, strLabel]) => `<button type="button" class="mode${strMode === strKey ? ' on' : ''}" data-act="mode" data-mode="${strKey}" aria-pressed="${strMode === strKey}">${strLabel}</button>`).join('');
     return `<article class="vcard${bFolded ? ' folded' : ''}" data-id="${Esc(objV.id)}">
       <div class="vc-head">
         <button type="button" class="vc-title" data-act="fold">${Esc(objV.title || '제목 없음')}</button>
-        <span class="vc-date num">${DotDate(objV.date)}</span>
         <button type="button" class="vc-fold" data-act="fold" aria-label="${bFolded ? '펼치기' : '접기'}" aria-expanded="${!bFolded}">${g_strIconChevron}</button>
       </div>
       ${objV.ref ? `<p class="vc-ref">${Esc(objV.ref)}</p>` : ''}
@@ -626,7 +614,6 @@ svg{display:block}
         ${strMode !== 'full' ? `<p class="vc-hint">본문을 누르면 ${bPeek ? '다시 가려요' : '잠시 보여요'}</p>` : ''}
         <div class="vc-modes">${strModes}</div>
         <div class="vc-foot">
-          ${strLink ? `<a class="vc-link" href="${Esc(strLink)}" target="_blank" rel="noopener noreferrer">${Esc(objV.ref || '본문')} 본문 보기 ${g_strIconRight}</a>` : '<span class="vc-link off">본문 링크 없음</span>'}
           <button type="button" class="vc-edit" data-act="edit">편집</button>
         </div>
       </div>
@@ -728,7 +715,7 @@ svg{display:block}
   });
 
   /* ================= 말씀 편집 시트 ================= */
-  const g_objVerseSheet = { elSheet: Q('#verseSheet'), strId: '' };
+  const g_objVerseSheet = { elSheet: Q('#verseSheet'), strId: '', strDate: '' };
 
   function OpenVerse(strId) {
     const strWk = g_objState.strWeek;
@@ -741,10 +728,7 @@ svg{display:block}
     Q('#vsName').value = objV ? objV.title : '';
     Q('#vsRef').value = objV ? objV.ref : '';
     Q('#vsText').value = objV ? objV.text : '';
-    Q('#vsLink').value = objV ? objV.link : '';
-    Q('#vsDate').min = strWk;
-    Q('#vsDate').max = WeekEnd(strWk);
-    Q('#vsDate').value = objV ? objV.date : strDefaultDate;
+    g_objVerseSheet.strDate = objV ? objV.date : strDefaultDate;   // 날짜 입력은 없애고 정렬용 값만 내부 유지
     Q('#vsTools').style.display = objV ? '' : 'none';
     OpenSheet(g_objVerseSheet.elSheet);
     if (!objV) setTimeout(() => Q('#vsName').focus(), 320);
@@ -755,13 +739,9 @@ svg{display:block}
     const strTitle = Q('#vsName').value.trim().slice(0, 60);
     const strRef = Q('#vsRef').value.trim().slice(0, 40);
     const strText = Q('#vsText').value.trim().slice(0, 3000);
-    const strLinkRaw = Q('#vsLink').value.trim();
-    const strLink = strLinkRaw ? SafeUrl(strLinkRaw) : '';
-    const strDate = Q('#vsDate').value;
+    const strDate = IsDateKey(g_objVerseSheet.strDate) && WeekKeyOf(ParseDateKey(g_objVerseSheet.strDate)) === strWk ? g_objVerseSheet.strDate : strWk;
     if (!strText) { Toast('본문을 입력해 주세요'); Q('#vsText').focus(); return; }
-    if (strLinkRaw && !strLink) { Toast('링크는 http:// 또는 https://로 시작해야 해요'); Q('#vsLink').focus(); return; }
-    if (!IsDateKey(strDate) || WeekKeyOf(ParseDateKey(strDate)) !== strWk) { Toast(`날짜는 ${DotDate(strWk)} ~ ${DotDate(WeekEnd(strWk))} 사이로 골라 주세요`); Q('#vsDate').focus(); return; }
-    const objPatch = { title: strTitle, ref: strRef, text: strText, link: strLink, date: strDate };
+    const objPatch = { title: strTitle, ref: strRef, text: strText, date: strDate };
     const strId = g_objVerseSheet.strId;
     const strLabel = strRef || strTitle || '말씀';
     CloseSheet();
@@ -868,7 +848,6 @@ svg{display:block}
     const strAct = elAct.dataset.act;
     if (strAct === 'add') { OpenVerse(''); return; }
     if (strAct === 'retry') { Load(true); return; }
-    if (e.target.closest('a')) return;
     const elCard = elAct.closest('.vcard');
     if (!elCard) return;
     const strId = elCard.dataset.id;
@@ -892,6 +871,8 @@ svg{display:block}
     }
   });
   Q('#btnSettings').addEventListener('click', OpenSettings);
+  Q('#btnFontDown').addEventListener('click', () => ChangeFontSize(-g_nFontStep));
+  Q('#btnFontUp').addEventListener('click', () => ChangeFontSize(g_nFontStep));
   Q('#btnPrev').addEventListener('click', () => GoWeek(-1));
   Q('#btnNext').addEventListener('click', () => GoWeek(1));
   Q('#btnToday').addEventListener('click', () => { const strNow = CurrentWeekKey(); if (strNow !== g_objState.strWeek) GoWeek(strNow > g_objState.strWeek ? 1 : -1, strNow); });
@@ -957,11 +938,10 @@ svg{display:block}
     };
     elV.addEventListener('pointerup', fnEnd);
     elV.addEventListener('pointercancel', fnEnd);
-    // 스와이프 후 링크로 이동하지 않도록 차단
-    elV.addEventListener('click', (e) => { if (g_bSuppressClick && e.target.closest('a')) e.preventDefault(); }, true);
   })();
 
   /* ================= 시작 ================= */
+  ApplyFontSize();
   LoadConfig();
   g_objStore.Hydrate();
   g_objState.bLoading = HasRepo() && !g_objStore.Known(g_objState.strWeek);
