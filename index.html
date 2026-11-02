@@ -72,7 +72,8 @@ h1{margin:3px 0 0;font-size:27px;font-weight:780;letter-spacing:-.035em;line-hei
 .icon-btn{position:relative;width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:var(--glass);
   -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);box-shadow:var(--shadow);border:1px solid var(--glass-2)}
 .icon-btn svg{width:18px;height:18px}
-a.icon-btn{color:inherit;text-decoration:none}
+a.icon-btn{color:inherit;text-decoration:none;width:46px;height:46px}
+a.icon-btn svg{width:22px;height:22px}
 .top-actions{display:flex;align-items:center;gap:8px}
 .badge{position:absolute;top:6px;right:7px;width:8px;height:8px;border-radius:50%;background:var(--danger);box-shadow:0 0 0 2px var(--bg);display:none}
 .badge.on{display:block}
@@ -134,12 +135,13 @@ a.icon-btn{color:inherit;text-decoration:none}
 .note-label svg{width:13px;height:13px}
 .note p{margin:0;font-size:calc(var(--vfs,18px) * .8);line-height:1.65;white-space:pre-wrap;word-break:keep-all;overflow-wrap:anywhere}
 .card-foot{display:flex;align-items:center;justify-content:flex-end;gap:6px;margin-top:16px}
-.fs-ctl{display:inline-flex;align-items:center;height:36px;margin-right:auto;border-radius:999px;background:var(--glass)}
-.fs-ctl button{width:40px;height:36px;display:grid;place-items:center;font-family:var(--serif);font-weight:600;color:var(--text)}
-.fs-ctl button:disabled{opacity:.3;cursor:default}
-.fs-ctl .fs-down{font-size:12px}
-.fs-ctl .fs-up{font-size:17px}
-.fs-ctl i{width:1px;height:16px;background:currentColor;opacity:.15}
+.fs-ctl{display:inline-flex;align-items:center;height:40px;padding:0 4px;border-radius:20px;background:var(--glass);border:1px solid var(--glass-2);
+  -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);box-shadow:var(--shadow)}
+.fs-ctl button{width:34px;height:32px;display:grid;place-items:center;border-radius:16px;font-weight:750;letter-spacing:-.04em;color:var(--text)}
+.fs-ctl button:active:not(:disabled){background:var(--glass-2);transform:scale(.94)}
+.fs-ctl button:disabled{opacity:.35;cursor:default}
+.fs-ctl .fs-down{font-size:13px}
+.fs-ctl .fs-up{font-size:18px}
 .chip-btn{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 14px;border-radius:999px;font-size:13px;font-weight:700;background:var(--glass)}
 .chip-btn svg{width:15px;height:15px}
 
@@ -287,6 +289,10 @@ body[data-sheet="edit"] #editSheet,body[data-sheet="settings"] #settingsSheet{tr
       <span class="sync" id="sync" role="status"><i></i><span id="syncText">동기화 중</span></span>
     </div>
     <div class="top-actions">
+      <div class="fs-ctl" role="group" aria-label="본문 글자 크기">
+        <button type="button" class="fs-down" data-fs="-1" aria-label="글자 작게" title="글자 작게">가</button>
+        <button type="button" class="fs-up" data-fs="1" aria-label="글자 크게" title="글자 크게">가</button>
+      </div>
       <a class="icon-btn" href="week.html" aria-label="주간 말씀으로 전환" title="주간 말씀">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5V5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2.5z"/><path d="M6 21h13"/><path d="M11.5 7v7M9 9.5h5"/></svg>
       </a>
@@ -815,9 +821,6 @@ body[data-sheet="edit"] #editSheet,body[data-sheet="settings"] #settingsSheet{tr
         <div class="ornament">${SPRIG}</div>
         ${e.note ? `<div class="note"><span class="note-label">${ICON.leaf}묵상</span><p>${esc(e.note)}</p></div>` : ''}
         <div class="card-foot">
-          <div class="fs-ctl" role="group" aria-label="글자 크기">
-            <button class="fs-down" data-fs="-1" aria-label="글자 작게"${fontIndex <= 0 ? ' disabled' : ''}>가</button><i></i><button class="fs-up" data-fs="1" aria-label="글자 크게"${fontIndex >= FONT_STEPS.length - 1 ? ' disabled' : ''}>가</button>
-          </div>
           <button class="chip-btn" data-copy="${k}">${ICON.copy}복사</button>
           <button class="chip-btn" data-edit="${k}">${ICON.edit}수정</button>
         </div>
