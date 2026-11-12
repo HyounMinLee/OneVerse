@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>튜브폴더 · YouTube 링크 보관함</title>
 <meta name="description" content="유튜브 링크를 폴더별로 정리하는 보관함">
-<meta name="theme-color" content="#101210" media="(prefers-color-scheme: dark)">
-<meta name="theme-color" content="#BFD6AA" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#161816" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#EEF0E8" media="(prefers-color-scheme: light)">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -22,17 +22,17 @@
 /* ================= 디자인 토큰 ================= */
 :root{
   --font:"Manrope","IBM Plex Sans KR",-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
-  --bg:#BFD6AA; --blob-1:#B1CC99; --blob-2:#C9DDB5;
+  --bg:#EEF0E8;
   --surface:#FFFFFF; --surface-2:#F2F5EE; --surface-3:#E4EADD;
-  --line:rgba(46,66,36,.08); --line-strong:rgba(46,66,36,.16);
-  --text:#1F2A1E; --text-2:#3F4C3C; --muted:#5F6E57;
-  --primary:#5E9A4C; --primary-2:#4F8740; --primary-ink:#FFFFFF; --primary-soft:#EDF5E4; --primary-soft-ink:#355A29;
+  --line:rgba(46,56,36,.07); --line-strong:rgba(46,56,36,.14);
+  --text:#22281F; --text-2:#4A5246; --muted:#848C7E;
+  --primary:#7FAE68; --primary-2:#6E9D58; --primary-ink:#FFFFFF; --primary-soft:#E1ECD5; --primary-soft-ink:#3E5E31;
   --danger:#D9534F; --ok:#5A9149;
-  --card-shadow:0 18px 36px -22px rgba(40,70,25,.55), 0 2px 6px -2px rgba(40,70,25,.12);
+  --card-shadow:0 14px 30px -22px rgba(50,60,40,.35), 0 1px 3px rgba(50,60,40,.06);
   --sheet-shadow:0 -10px 50px -12px rgba(30,50,25,.35);
   --r-xl:28px; --r-lg:22px; --r-md:16px;
-  --ink:#1B2418; --badge-bg:rgba(255,255,255,.38);
-  --fs:1; --is:1; --fmin:150px;
+  --ink:#2A3127; --badge-bg:rgba(255,255,255,.5);
+  --fs:1; --is:1;
   --safe-t:env(safe-area-inset-top,0px); --safe-b:env(safe-area-inset-bottom,0px);
   --safe-l:env(safe-area-inset-left,0px); --safe-r:env(safe-area-inset-right,0px);
   --pad-l:calc(var(--safe-l) + 22px); --pad-r:calc(var(--safe-r) + 22px);
@@ -41,15 +41,15 @@
 @media (min-width:920px){ :root{ --pad-l:calc(var(--safe-l) + 48px); --pad-r:calc(var(--safe-r) + 48px); } }
 @media (prefers-color-scheme: dark){
   :root{
-    --bg:#101210; --blob-1:#171A16; --blob-2:#141713;
+    --bg:#161816;
     --surface:#2C302B; --surface-2:#363A35; --surface-3:#41463F;
     --line:rgba(255,255,255,.06); --line-strong:rgba(255,255,255,.12);
     --text:#F1F3EE; --text-2:#C3C8BE; --muted:#949A8F;
-    --primary:#B3D88A; --primary-2:#C2E29D; --primary-ink:#1B2416; --primary-soft:#3A4630; --primary-soft-ink:#D6EBBE;
+    --primary:#BBD9A6; --primary-2:#C8E2B6; --primary-ink:#1B2416; --primary-soft:#3A4630; --primary-soft-ink:#D6EBBE;
     --danger:#F07A72; --ok:#B3D88A;
     --card-shadow:0 18px 40px -26px rgba(0,0,0,.8);
     --sheet-shadow:0 -10px 50px -12px rgba(0,0,0,.7);
-    --ink:#151A13; --badge-bg:rgba(255,255,255,.32);
+    --ink:#22281F; --badge-bg:rgba(255,255,255,.45);
     color-scheme:dark;
   }
 }
@@ -64,13 +64,6 @@ button,input,select,textarea{font:inherit;color:inherit;letter-spacing:inherit}
 button{cursor:pointer;border:0;background:none;padding:0}
 svg{display:block}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
-
-/* 배경의 큰 원형 장식 */
-.deco{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden}
-.deco i{position:absolute;border-radius:50%}
-.deco i:nth-child(1){width:120vmax;height:120vmax;left:-62vmax;top:-70vmax;background:var(--blob-1)}
-.deco i:nth-child(2){width:90vmax;height:90vmax;right:-55vmax;top:18vh;background:var(--blob-2)}
-.deco i:nth-child(3){width:70vmax;height:70vmax;left:-30vmax;bottom:-52vmax;border:1.5px solid var(--line-strong);opacity:.6}
 
 /* ================= 상단바 ================= */
 .topbar{
@@ -143,7 +136,6 @@ svg{display:block}
   margin:0 var(--pad-r) 28px var(--pad-l);border-radius:var(--r-xl);background:var(--primary-soft);
   display:flex;align-items:center;gap:14px;padding:18px;overflow:hidden;position:relative;animation:rise .35s ease-out both;
 }
-.banner::after{content:"";position:absolute;right:-60px;top:-60px;width:180px;height:180px;border-radius:50%;background:color-mix(in srgb, var(--surface) 35%, transparent)}
 .banner .bt{flex:1;min-width:0;position:relative;z-index:1}
 .banner .lbl{font-size:calc(12px * var(--fs));font-weight:700;color:var(--primary-soft-ink);opacity:.8}
 .banner .ttl{margin:4px 0 12px;font-weight:800;font-size:calc(16.5px * var(--fs));line-height:1.35;color:var(--primary-soft-ink);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
@@ -152,39 +144,28 @@ svg{display:block}
 .banner .bimg img{width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .3s}
 .banner .bimg img.ok{opacity:1}
 
-/* ================= 폴더 카드 ================= */
-.fgrid{
-  display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(min(var(--fmin),100%),1fr));
-  padding:0 var(--pad-r) 0 var(--pad-l);
-}
-@media (min-width:640px){ .fgrid{gap:18px} }
+/* ================= 폴더 (가로 막대형) ================= */
+.fgrid{display:grid;gap:10px;grid-template-columns:1fr;padding:0 var(--pad-r) 0 var(--pad-l)}
+@media (min-width:760px){ .fgrid{grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:12px} }
 @media (min-width:920px){
   .searchbar{max-width:calc(760px + var(--pad-l) + var(--pad-r))}
   .banner{max-width:720px}
-  .ftile{aspect-ratio:1/0.92}
 }
 .ftile{
-  position:relative;aspect-ratio:1/1.02;border-radius:var(--r-xl);padding:16px;display:flex;flex-direction:column;justify-content:space-between;
-  background:var(--c);color:var(--ink);
-  cursor:pointer;outline:none;overflow:hidden;animation:rise .35s ease-out both;transition:transform .18s ease;
+  position:relative;height:var(--fh);border-radius:var(--fr);padding:0 22px;
+  display:flex;align-items:center;gap:12px;
+  background:var(--c);color:var(--ink);cursor:pointer;outline:none;user-select:none;-webkit-user-select:none;
+  animation:rise .3s ease-out both;transition:transform .15s ease, filter .15s;
 }
-.ftile:active{transform:scale(.975)}
-@media (hover:hover){ .ftile:hover{transform:translateY(-3px)} }
+.ftile:active{transform:scale(.985)}
+@media (hover:hover){ .ftile:hover{filter:brightness(1.04)} }
 .ftile:focus-visible{box-shadow:0 0 0 3px var(--text)}
-.ftile .fb{background:var(--badge-bg);color:var(--ink);box-shadow:none}
-.ft-top,.ft-bot{position:relative;display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
-.ft-bot{align-items:flex-end}
-.fb{
-  display:grid;place-items:center;flex:none;background:var(--c);color:#fff;font-weight:800;
-  box-shadow:0 10px 20px -12px var(--c);
-}
+.fname{flex:1;min-width:0;font-weight:700;font-size:var(--fts);letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fcount{flex:none;font-weight:600;font-size:calc(var(--fts) * .82);opacity:.6;font-variant-numeric:tabular-nums}
+.ficon{flex:none;width:calc(var(--fts) * 1.35);height:calc(var(--fts) * 1.35);display:grid;place-items:center}
+.ficon svg{width:100%;height:100%}
+.fb{display:grid;place-items:center;flex:none;background:var(--c);color:var(--ink);font-weight:800}
 .fb svg{width:52%;height:52%}
-.ft-top .fb{width:calc(50px * var(--is));height:calc(50px * var(--is));border-radius:calc(17px * var(--is));font-size:calc(20px * var(--is))}
-.fname{font-weight:800;font-size:calc(17px * var(--fs));letter-spacing:-.025em;line-height:1.28;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
-.fsub{margin-top:4px;font-size:calc(12.5px * var(--fs));font-weight:600;color:var(--ink);opacity:.72;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ft-bot .tx{min-width:0;flex:1;padding:0 2px 2px}
-.fmore{width:34px;height:34px;margin:-6px -8px 0 0;border-radius:50%;display:grid;place-items:center;color:var(--ink)}
-.fmore:hover{background:rgba(255,255,255,.3)}
 
 /* ================= 영상 카드 ================= */
 .grid{
@@ -299,12 +280,12 @@ mark{background:var(--primary-soft);color:inherit;border-radius:4px;padding:0 2p
 .fp.new{padding:0 16px;background:transparent;border:1.5px dashed var(--line-strong);color:var(--muted)}
 
 .folder-preview{display:flex;justify-content:center;padding:6px 0 22px}
-.folder-preview .ftile{width:168px;animation:none;pointer-events:none}
+.folder-preview .ftile{width:100%;animation:none;pointer-events:none}
 .glyph-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:7px}
 .glyph-grid button{aspect-ratio:1;border-radius:14px;background:var(--surface-2);color:var(--text-2);display:grid;place-items:center;transition:all .12s}
 .glyph-grid button svg{width:calc(20px * var(--is));height:calc(20px * var(--is))}
-.glyph-grid button.on{background:var(--gc);color:#fff}
-.glyph-grid .letter{font-weight:800;font-size:calc(15px * var(--fs))}
+.glyph-grid button.on{background:var(--gc);color:var(--ink)}
+.glyph-grid .letter{font-weight:700;font-size:calc(12.5px * var(--fs))}
 .color-row{display:flex;gap:10px;flex-wrap:wrap}
 .color-row button{width:36px;height:36px;border-radius:50%;transition:transform .12s}
 .color-row button.on{box-shadow:0 0 0 3px var(--surface),0 0 0 5.5px currentColor}
@@ -357,32 +338,18 @@ textarea.input{height:120px;padding:14px 16px;resize:vertical;font-size:13px;fon
 }
 .toast.show{opacity:1;transform:translate(-50%,0)}
 
-/* ================= 폴더 크기 단계 ================= */
-:root[data-fsz="0"]{--fmin:76px} :root[data-fsz="1"]{--fmin:104px} :root[data-fsz="2"]{--fmin:150px} :root[data-fsz="3"]{--fmin:280px}
-@media (min-width:640px){
-  :root{--fmin:200px}
-  :root[data-fsz="0"]{--fmin:130px} :root[data-fsz="1"]{--fmin:160px} :root[data-fsz="2"]{--fmin:200px} :root[data-fsz="3"]{--fmin:300px}
-}
-:root[data-fsz="0"] .fgrid{gap:10px}
-:root[data-fsz="0"] .ftile,:root[data-fsz="1"] .ftile{padding:11px;border-radius:20px}
-:root[data-fsz="0"] .ft-top .fb{width:calc(30px * var(--is));height:calc(30px * var(--is));border-radius:calc(11px * var(--is));font-size:calc(13px * var(--is))}
-:root[data-fsz="1"] .ft-top .fb{width:calc(38px * var(--is));height:calc(38px * var(--is));border-radius:calc(13px * var(--is));font-size:calc(16px * var(--is))}
-:root[data-fsz="0"] .fname{font-size:calc(12px * var(--fs))}
-:root[data-fsz="1"] .fname{font-size:calc(14px * var(--fs))}
-:root[data-fsz="0"] .fsub{font-size:calc(10.5px * var(--fs))}
-:root[data-fsz="1"] .fsub{font-size:calc(11.5px * var(--fs))}
-:root[data-fsz="0"] .fmore,:root[data-fsz="1"] .fmore{display:none}
-:root[data-fsz="3"] .ftile{aspect-ratio:16/8;padding:22px}
-:root[data-fsz="3"] .ft-top .fb{width:calc(60px * var(--is));height:calc(60px * var(--is));border-radius:calc(20px * var(--is));font-size:calc(24px * var(--is))}
-:root[data-fsz="3"] .fname{font-size:calc(20px * var(--fs))}
-:root[data-fsz="3"] .fsub{font-size:calc(13.5px * var(--fs))}
+/* ================= 폴더 크기 단계 (막대 높이·글자) ================= */
+:root{--fh:66px;--fr:18px;--fts:calc(16px * var(--fs))}
+:root[data-fsz="0"]{--fh:48px;--fr:14px;--fts:calc(14px * var(--fs))}
+:root[data-fsz="1"]{--fh:56px;--fr:16px;--fts:calc(15px * var(--fs))}
+:root[data-fsz="2"]{--fh:66px;--fr:18px;--fts:calc(16px * var(--fs))}
+:root[data-fsz="3"]{--fh:80px;--fr:22px;--fts:calc(18px * var(--fs))}
 
 /* 아이콘 크기 단계: 원형 버튼 등 */
 .circle-btn,.meta .more,.fmore{zoom:var(--is)}
 </style>
 </head>
 <body>
-<div class="deco" aria-hidden="true"><i></i><i></i><i></i></div>
 
 <header class="topbar" id="topbar">
   <div class="tb-left" id="tbLeft"></div>
@@ -553,14 +520,15 @@ textarea.input{height:120px;padding:14px 16px;resize:vertical;font-size:13px;fon
   const STORE_KEY = "tubefolder.v1";
   const NONE = "__none__";
   /* 폴더 색상표 (참고 디자인에 맞춘 파스텔 톤) */
-  const COLORS = ["#7FB069","#5DBB9A","#3E9E9A","#6AA6D8","#9B8AD6","#F0A47A","#D9B86A","#E08AA0","#9A9C92"];
+  const COLORS = ["#BBD9A6","#A9DCC8","#A5D3D8","#B3CDEE","#CBC1EE","#F7C8AA","#F2DE9E","#F3BACA","#D6D4CA"];
+  const V4_COLORS = ["#7FB069","#5DBB9A","#3E9E9A","#6AA6D8","#9B8AD6","#F0A47A","#D9B86A","#E08AA0","#9A9C92"];
   /* 이전 버전 색상 변환 */
   const V3_COLORS = ["#E5675A","#E99A3C","#D4AE45","#5FA97A","#4A9FA3","#5B88E0","#8676D2","#CF7398","#8E8A82"];
   const V3_TO_V4 = { "#E5675A":"#F0A47A", "#E99A3C":"#D9B86A", "#D4AE45":"#D9B86A", "#5FA97A":"#7FB069", "#4A9FA3":"#3E9E9A", "#5B88E0":"#6AA6D8", "#8676D2":"#9B8AD6", "#CF7398":"#E08AA0", "#8E8A82":"#9A9C92" };
   const V2_COLORS = ["#FF4D5E","#FF8A3D","#F5B83D","#34C77B","#22B8C7","#4F86FF","#8B6CFF","#E85DB5","#7C8296"];
   const V1_TO_V2 = { "#FF3B4E":"#FF4D5E", "#FFC53D":"#F5B83D", "#3DD68C":"#34C77B", "#2EC5CE":"#22B8C7", "#4F8BFF":"#4F86FF", "#F062C0":"#E85DB5" };
   const OLD_EMOJI = { "⭐":"star", "🎵":"music", "🎬":"film", "🍳":"food", "💪":"fitness", "📚":"book", "💻":"code", "🎮":"game", "✈️":"travel", "❤️":"heart", "💡":"idea" };
-  const NONE_VIS = { id:null, name:"미분류", color:"#9A9C92", glyph:"inbox" };
+  const NONE_VIS = { id:null, name:"미분류", color:"#D6D4CA", glyph:"inbox" };
 
   const G = (d) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
   const GLYPHS = {
@@ -599,11 +567,14 @@ textarea.input{height:120px;padding:14px 16px;resize:vertical;font-size:13px;fon
   function defaultData(){ return { version:3, folders:[], links:[], settings:{ sort:"new", openInApp:true, hintSeen:false, font:"plex", ...SIZE_DEFAULT } }; }
   function migrateColor(c, i){
     if(COLORS.includes(c)) return c;
+    const k4 = V4_COLORS.indexOf(c);
+    if(k4 >= 0) return COLORS[k4];
     let v = c;
     if(V1_TO_V2[v]) v = V1_TO_V2[v];
     const k2 = V2_COLORS.indexOf(v);
     if(k2 >= 0) v = V3_COLORS[k2];
-    return V3_TO_V4[v] || COLORS[i % (COLORS.length - 1)];
+    const v4 = V3_TO_V4[v];
+    return v4 ? COLORS[V4_COLORS.indexOf(v4)] : COLORS[i % (COLORS.length - 1)];
   }
   function lvl(v, def){ const n = Number(v); return Number.isInteger(n) && n >= 0 && n <= 3 ? n : def; }
   function normalize(d){
@@ -880,18 +851,17 @@ textarea.input{height:120px;padding:14px 16px;resize:vertical;font-size:13px;fon
   }
   function folderTile(v, count, fid, i){
     const interactive = fid !== undefined;
-    const tile = el("div", { class:"ftile", style:`--c:${v.color};animation-delay:${Math.min(i || 0, 14) * 30}ms`,
-      role: interactive ? "button" : null, tabindex: interactive ? "0" : null, "aria-label": interactive ? `${v.name} 폴더 열기` : null,
-      onclick: interactive ? (e) => { if(e.target.closest(".fmore")) return; openFolder(fid); } : null,
+    const glyph = v.glyph && v.glyph !== "none" ? GLYPHS[v.glyph] : "";
+    const tile = el("div", { class:"ftile", style:`--c:${v.color};animation-delay:${Math.min(i || 0, 14) * 25}ms`,
+      role: interactive ? "button" : null, tabindex: interactive ? "0" : null,
+      "aria-label": interactive ? `${v.name} 폴더 열기, 영상 ${count}개` : null,
+      onclick: interactive ? () => openFolder(fid) : null,
       onkeydown: interactive ? (e) => { if(e.key === "Enter") openFolder(fid); } : null },
-      el("div", { class:"ft-top" },
-        el("span", { html:folderBadge(v) }),
-        interactive && fid !== NONE ? el("button", { class:"fmore", type:"button", "aria-label":`${v.name} 폴더 메뉴`, onclick:(e) => { e.stopPropagation(); openFolderMenu(fid); }, html:ICON.more }) : null
-      ),
-      el("div", { class:"ft-bot" },
-        el("div", { class:"tx" }, el("div", { class:"fname" }, v.name), el("div", { class:"fsub" }, count ? `영상 ${count}개` : "비어 있음"))
-      )
+      el("span", { class:"fname" }, v.name),
+      el("span", { class:"fcount" }, String(count)),
+      glyph ? el("span", { class:"ficon", html:glyph }) : null
     );
+    /* 폴더 메뉴: 길게 누르기(모바일) / 우클릭(PC) */
     if(interactive && fid !== NONE) attachLongPress(tile, () => openFolderMenu(fid));
     return tile;
   }
@@ -1195,8 +1165,8 @@ textarea.input{height:120px;padding:14px 16px;resize:vertical;font-size:13px;fon
     for(const k of GLYPH_KEYS){
       if(k === "inbox") continue;
       const isNone = k === "none";
-      gg.append(el("button", { type:"button", class:(k === fGlyph ? "on " : "") + (isNone ? "letter" : ""), style:`--gc:${fColor}`, "aria-label":isNone ? "이름 첫 글자" : k,
-        onclick:() => { fGlyph = k; renderFolderForm(); }, html:isNone ? esc((Array.from(name)[0] || "가").toUpperCase()) : GLYPHS[k] }));
+      gg.append(el("button", { type:"button", class:(k === fGlyph ? "on " : "") + (isNone ? "letter" : ""), style:`--gc:${fColor}`, "aria-label":isNone ? "아이콘 없음" : k,
+        onclick:() => { fGlyph = k; renderFolderForm(); }, html:isNone ? "없음" : GLYPHS[k] }));
     }
   }
   function openFolderSheet(folderId, after){
@@ -1326,7 +1296,7 @@ textarea.input{height:120px;padding:14px 16px;resize:vertical;font-size:13px;fon
     { key:"iconSize", title:"아이콘 크기", names:["작게","보통","크게","아주 크게"],
       face:(i) => el("span", { html:S('<rect x="2.5" y="5" width="19" height="14" rx="4"/><path d="m10 9 5 3-5 3z" fill="currentColor"/>', [14,17,20,23][i]) }) },
     { key:"folderSize", title:"폴더 크기", names:["아주 작게","작게","보통","크게"],
-      face:(i) => { const n = [4,3,2,1][i], w = [5,7,10,20][i]; const box = el("span", { class:"dotbox" }); for(let k = 0; k < n; k++) box.append(el("i", { style:`width:${w}px;height:${Math.round(w*0.75)}px` })); return box; } }
+      face:(i) => el("span", { class:"dotbox" }, el("i", { style:`width:30px;height:${[6,9,12,16][i]}px;border-radius:4px` })) }
   ];
   function renderSizeControls(){
     const box = $("#sizeControls"); box.textContent = "";
