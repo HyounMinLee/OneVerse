@@ -1,5 +1,5 @@
 /* 튜브폴더 서비스 워커: 앱 화면(셸)만 캐시하고, 썸네일·메타데이터는 항상 네트워크 사용 */
-const CACHE = "tubefolder-shell-v4";
+const CACHE = "tubefolder-shell-v10";
 const SHELL = ["./", "./index.html", "./manifest.webmanifest", "./favicon.svg", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png"];
 
 self.addEventListener("install", (e) => {
