@@ -1,0 +1,17 @@
+{
+  "app": "tubefolder-vault",
+  "v": 1,
+  "id": "mwdcch4d81s0fs",
+  "alg": "AES-256-GCM",
+  "kdf": {
+    "name": "PBKDF2",
+    "hash": "SHA-256",
+    "iterations": 600000,
+    "salt": "IEelXVJv9rA0ufCSUx1dHg=="
+  },
+  "check": {
+    "iv": "X5b8gIihBh0ndSe+",
+    "ct": "cqMlHfeA7LEve1ZkKR6cXY53KZDYZoShWCkwS2uOJKcvBQo6HwJb5iU="
+  },
+  "createdAt": "2026-11-12T09:24:02.606Z"
+}
