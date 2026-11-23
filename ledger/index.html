@@ -138,6 +138,14 @@ button.hero-cell:active{transform:scale(.98)}
 .row-amt{flex-shrink:0;font-size:16px;font-weight:800;letter-spacing:-.03em}
 .row-amt.zero{color:var(--faint);font-weight:650}
 .row-amt.plus{color:var(--plus)}
+/* 지난달 대비 변화량 (금액 위) */
+.row-right{flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end}
+.row-delta{font-size:11px;font-weight:750;line-height:1.3;letter-spacing:-.01em;white-space:nowrap}
+.row-delta.bad{color:var(--danger)}
+.row-delta.good{color:var(--plus)}
+.row-delta.same{color:var(--faint);font-weight:650}
+.row-delta.new{color:var(--accent)}
+.delta-note{margin:14px 6px -4px;font-size:12px;font-weight:600;color:var(--muted)}
 
 .add-row{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;height:52px;margin-top:10px;border-radius:20px;border:1.5px dashed var(--line);color:var(--muted);font-size:14px;font-weight:700}
 .add-row svg{width:18px;height:18px}
@@ -574,6 +582,41 @@ button.hero-cell:active{transform:scale(.98)}
   function CountFixedWithAmount(objMonth) { return objMonth.items.filter((objItem) => objItem.fixed && ItemTotal(objItem) > 0).length; }
 
   function ItemTotal(objItem) { return Object.values(objItem.amounts).reduce((n, v) => n + (Number(v) || 0), 0); }
+
+  /** 지난달의 같은 항목: id로 먼저 찾고, 없으면 같은 이름·유형으로 찾음 */
+  function FindPrevItem(objPrev, objItem) {
+    let objFound = null;
+    if (objPrev) {
+      objFound = objPrev.items.find((x) => x.id === objItem.id)
+        || objPrev.items.find((x) => x.name === objItem.name && x.type === objItem.type)
+        || null;
+    }
+    return objFound;
+  }
+
+  /** 항목 금액 위에 표시할 지난달 대비 변화량 HTML. 비교할 지난달 데이터가 없으면 빈 문자열 */
+  function DeltaHtml(objItem, objPrev) {
+    let strHtml = '';
+    if (objPrev) {
+      const nCur = ItemTotal(objItem);
+      const objP = FindPrevItem(objPrev, objItem);
+      if (!objP) {
+        if (nCur) strHtml = '<span class="row-delta new" title="지난달에 없던 항목">신규</span>';
+      } else {
+        const nDiff = nCur - ItemTotal(objP);
+        if (nDiff === 0) {
+          if (nCur) strHtml = '<span class="row-delta same">변동 없음</span>';
+        } else {
+          const bUp = nDiff > 0;
+          // 지출은 줄면 좋음, 수입은 늘면 좋음
+          const bGood = objItem.type === 'in' ? bUp : !bUp;
+          const strAbs = Won(Math.abs(nDiff));
+          strHtml = `<span class="row-delta ${bGood ? 'good' : 'bad'}" title="지난달보다 ${strAbs}원 ${bUp ? '증가' : '감소'}">${bUp ? '▲' : '▼'} ${strAbs}</span>`;
+        }
+      }
+    }
+    return strHtml;
+  }
 
   function Summarize(objMonth) {
     const objSum = { nOut: 0, nIn: 0, nFixedOut: 0, objCols: {} };
@@ -1068,6 +1111,11 @@ button.hero-cell:active{transform:scale(.98)}
       arrHtml.push(`<div class="notice"><span>${strMsg}</span>${strBtns}</div>`);
     }
 
+    // 지난달 대비 변화량: 저장된 달에서만 표시 (아직 저장 전인 새 달은 모든 항목이 감소로 보이므로 제외)
+    const strPrevMk = AddMonth(g_objState.strMonth, -1);
+    const objPrev = g_objState.bSaved ? g_objStore.Data(strPrevMk) : null;
+    if (objPrev) arrHtml.push(`<p class="delta-note">항목 금액 위 숫자는 <span class="num">${strPrevMk.replace('-', '.')}</span> 대비 변화예요</p>`);
+
     // 같은 색이 연속된 항목끼리 하나의 카드로 묶음
     const arrGroups = [];
     objV.items.forEach((objItem) => {
@@ -1085,7 +1133,7 @@ button.hero-cell:active{transform:scale(.98)}
         const strAmtCls = nTotal ? (objItem.type === 'in' ? ' plus' : '') : ' zero';
         arrHtml.push(`<button class="row" data-id="${Esc(objItem.id)}">
           <span class="row-main"><span class="row-name">${Esc(objItem.name)}${objItem.fixed ? '<span class="tag fixed">고정</span>' : ''}${objItem.type === 'in' ? '<span class="tag">수입</span>' : ''}</span>${strSub ? `<span class="row-sub num">${strSub}</span>` : ''}</span>
-          <span class="row-amt num${strAmtCls}">${nTotal ? (objItem.type === 'in' ? '+' : '') + Won(nTotal) : '—'}</span>
+          <span class="row-right">${DeltaHtml(objItem, objPrev)}<span class="row-amt num${strAmtCls}">${nTotal ? (objItem.type === 'in' ? '+' : '') + Won(nTotal) : '—'}</span></span>
         </button>`);
       });
       arrHtml.push('</div>');
@@ -1129,7 +1177,16 @@ button.hero-cell:active{transform:scale(.98)}
       RenderPane();
     }
     // 옆 달 미리 읽기 (스와이프 시 바로 표시)
-    if (nSeq === g_nLoadSeq) [AddMonth(strMk, -1), AddMonth(strMk, 1)].forEach((strAdj) => { if (!g_objStore.Known(strAdj)) g_objStore.Ensure(strAdj, false).catch(() => {}); });
+    if (nSeq === g_nLoadSeq) {
+      const strPrevMk = AddMonth(strMk, -1);
+      [strPrevMk, AddMonth(strMk, 1)].forEach((strAdj) => {
+        if (g_objStore.Known(strAdj)) return;
+        g_objStore.Ensure(strAdj, false).then((bChanged) => {
+          // 지난달 데이터가 뒤늦게 도착하면 변화량 표시를 위해 다시 그림
+          if (bChanged && strAdj === strPrevMk && g_objState.strMonth === strMk && !IsLocked()) RenderPane();
+        }).catch(() => {});
+      });
+    }
   }
 
   /* ================= 변경 (낙관적 반영 후 커밋) ================= */
