@@ -183,8 +183,17 @@ button.hero-cell:active{transform:scale(.98)}
   padding:10px 20px calc(20px + env(safe-area-inset-bottom));border-radius:28px 28px 0 0;background:var(--surface);
   transform:translateY(105%);transition:transform .3s cubic-bezier(.2,.8,.2,1);visibility:hidden}
 .sheet.on{transform:none;visibility:visible}
-.grip{width:38px;height:5px;margin:0 auto 14px;border-radius:3px;background:var(--line)}
+.grip{width:38px;height:5px;margin:0 auto 4px;border-radius:3px;background:var(--line)}
 .sheet h2{margin:0 0 14px;font-size:20px;font-weight:800;letter-spacing:-.03em}
+.sheet{touch-action:pan-y}
+.sheet.dragging{transition:none}
+.sheet.no-anim{transition:none}
+/* 시트 제목 줄: 스크롤해도 닫기 버튼이 항상 보이도록 고정 */
+.sheet-head{position:sticky;top:-10px;z-index:3;display:flex;align-items:center;gap:8px;margin:0 -20px 14px;padding:6px 12px 6px 20px;background:var(--surface)}
+.sheet-head h2{flex:1;min-width:0;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sheet-close{flex:0 0 40px;width:40px;height:40px;display:grid;place-items:center;border-radius:14px;background:var(--surface-2);color:var(--muted)}
+.sheet-close svg{width:20px;height:20px}
+.sheet-close:active{transform:scale(.94)}
 .sheet h3{margin:20px 0 10px;font-size:14px;font-weight:750;color:var(--muted)}
 .field{display:block;margin-bottom:12px}
 .field > span{display:block;margin:0 2px 6px;font-size:13px;font-weight:700;color:var(--muted)}
@@ -289,7 +298,7 @@ button.hero-cell:active{transform:scale(.98)}
 <!-- 항목 편집 -->
 <section class="sheet" id="itemSheet" role="dialog" aria-modal="true" aria-labelledby="itemTitle">
   <div class="grip"></div>
-  <h2 id="itemTitle">항목</h2>
+  <div class="sheet-head"><h2 id="itemTitle">항목</h2><button type="button" class="sheet-close" data-close aria-label="닫기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
   <label class="field"><span>항목 이름</span><input type="text" id="itName" maxlength="30" autocomplete="off"></label>
   <div class="seg" id="itType"><button type="button" data-type="out">지출</button><button type="button" data-type="in">수입</button></div>
   <label class="toggle">
@@ -316,7 +325,7 @@ button.hero-cell:active{transform:scale(.98)}
 <!-- 급여 -->
 <section class="sheet" id="salarySheet" role="dialog" aria-modal="true" aria-labelledby="salaryTitle">
   <div class="grip"></div>
-  <h2 id="salaryTitle">급여</h2>
+  <div class="sheet-head"><h2 id="salaryTitle">급여</h2><button type="button" class="sheet-close" data-close aria-label="닫기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
   <label class="field money"><span>이번 달 급여</span><input type="text" id="slAmount" inputmode="numeric" autocomplete="off"></label>
   <div class="sheet-actions">
     <button class="btn" data-close>취소</button>
@@ -327,7 +336,7 @@ button.hero-cell:active{transform:scale(.98)}
 <!-- 설정 -->
 <section class="sheet" id="settingsSheet" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
   <div class="grip"></div>
-  <h2 id="settingsTitle">GitHub 연결</h2>
+  <div class="sheet-head"><h2 id="settingsTitle">GitHub 연결</h2><button type="button" class="sheet-close" data-close aria-label="닫기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
   <p class="set-note" id="ghStatus"></p>
   <div class="field-row">
     <label class="field"><span>소유자 (owner)</span><input type="text" id="ghOwner" autocapitalize="off" autocomplete="off" spellcheck="false"></label>
@@ -1150,19 +1159,116 @@ button.hero-cell:active{transform:scale(.98)}
 
   /* ================= 시트 공통 ================= */
   let g_elOpenSheet = null;
+
+  /*
+   * 휴대폰 뒤로가기(버튼·제스처)로 시트를 닫기 위해 시트를 열 때 history 항목을 하나 추가.
+   * g_bSheetHistory: 시트용 항목이 쌓여 있음 / g_bBackPending: 코드에서 history.back()을 호출해 popstate 대기 중
+   */
+  let g_bSheetHistory = false;
+  let g_bBackPending = false;
+  function PushSheetHistory() {
+    if (g_bSheetHistory || g_bBackPending) return;
+    try { history.pushState({ ledgerSheet: 1 }, ''); g_bSheetHistory = true; } catch { /* 히스토리 사용 불가 환경 */ }
+  }
+  window.addEventListener('popstate', () => {
+    if (g_bBackPending) {
+      g_bBackPending = false;
+      // 되돌아가는 사이 다른 시트가 열렸으면 그 시트용 항목을 다시 추가
+      if (g_elOpenSheet) PushSheetHistory();
+      return;
+    }
+    if (!g_elOpenSheet) return;
+    g_bSheetHistory = false;
+    HideSheet();
+  });
+
+  function ResetSheetDrag(elSheet) {
+    elSheet.classList.remove('dragging');
+    elSheet.style.transform = '';
+    g_objEl.elBackdrop.style.opacity = '';
+  }
+
   function OpenSheet(elSheet) {
-    if (g_elOpenSheet) g_elOpenSheet.classList.remove('on');
+    if (g_elOpenSheet && g_elOpenSheet !== elSheet) { g_elOpenSheet.classList.remove('on'); ResetSheetDrag(g_elOpenSheet); }
+    ResetSheetDrag(elSheet);
     g_elOpenSheet = elSheet;
     g_objEl.elBackdrop.classList.add('on');
     elSheet.classList.add('on');
+    PushSheetHistory();
   }
-  function CloseSheet() {
-    if (!g_elOpenSheet) return;
-    if (document.activeElement && g_elOpenSheet.contains(document.activeElement)) document.activeElement.blur();
-    g_elOpenSheet.classList.remove('on');
+
+  /** 화면에서만 시트를 닫음 (history는 건드리지 않음). bNoAnim이면 내려가는 애니메이션 없이 즉시 숨김 */
+  function HideSheet(bNoAnim) {
+    const elSheet = g_elOpenSheet;
+    if (!elSheet) return;
+    if (document.activeElement && elSheet.contains(document.activeElement)) document.activeElement.blur();
+    if (bNoAnim) elSheet.classList.add('no-anim');
+    elSheet.classList.remove('on');
+    ResetSheetDrag(elSheet);
     g_objEl.elBackdrop.classList.remove('on');
     g_elOpenSheet = null;
+    if (bNoAnim) { void elSheet.offsetWidth; elSheet.classList.remove('no-anim'); }
   }
+
+  /** 닫기 버튼·취소·배경·저장 등 앱 안에서 닫을 때 */
+  function CloseSheet(bNoAnim) {
+    if (!g_elOpenSheet) return;
+    HideSheet(bNoAnim === true);
+    if (g_bSheetHistory) {
+      g_bSheetHistory = false;
+      g_bBackPending = true;
+      try { history.back(); } catch { g_bBackPending = false; }
+    }
+  }
+
+  /* 시트 가로 스와이프로 닫기: 손가락을 따라 움직이다가 일정 거리(또는 빠르게) 넘기면 그 방향으로 밀려나며 닫힘 */
+  function BindSheetSwipe(elSheet) {
+    let objDrag = null;
+    let bSuppressClick = false;
+    elSheet.addEventListener('pointerdown', (e) => {
+      if (elSheet !== g_elOpenSheet || (e.pointerType === 'mouse' && e.button !== 0)) return;
+      // 입력칸 안에서의 가로 드래그는 커서 이동·텍스트 선택용이므로 제외
+      if (e.target.closest('input, textarea, select')) return;
+      objDrag = { nX: e.clientX, nY: e.clientY, nT: performance.now(), strAxis: '', nDx: 0, nId: e.pointerId };
+    });
+    elSheet.addEventListener('pointermove', (e) => {
+      if (!objDrag || e.pointerId !== objDrag.nId) return;
+      const nDx = e.clientX - objDrag.nX;
+      const nDy = e.clientY - objDrag.nY;
+      if (!objDrag.strAxis) {
+        if (Math.abs(nDx) < 10 && Math.abs(nDy) < 10) return;
+        objDrag.strAxis = Math.abs(nDx) > Math.abs(nDy) * 1.3 ? 'x' : 'y';
+        if (objDrag.strAxis !== 'x') { objDrag = null; return; }
+        try { elSheet.setPointerCapture(e.pointerId); } catch { /* 무시 */ }
+        elSheet.classList.add('dragging');
+      }
+      objDrag.nDx = nDx;
+      elSheet.style.transform = `translate3d(${nDx}px,0,0)`;
+      g_objEl.elBackdrop.style.opacity = String(Math.max(0.2, 1 - Math.abs(nDx) / elSheet.clientWidth));
+    });
+    const fnEnd = (e) => {
+      if (!objDrag || e.pointerId !== objDrag.nId) return;
+      const objD = objDrag;
+      objDrag = null;
+      if (objD.strAxis !== 'x') return;
+      bSuppressClick = true;
+      setTimeout(() => { bSuppressClick = false; }, 300);
+      const nW = elSheet.clientWidth || window.innerWidth;
+      const nVel = Math.abs(objD.nDx) / Math.max(performance.now() - objD.nT, 1);
+      elSheet.classList.remove('dragging');
+      const bClose = e.type !== 'pointercancel' && (Math.abs(objD.nDx) > nW * 0.3 || (nVel > 0.5 && Math.abs(objD.nDx) > 40));
+      if (!bClose) { elSheet.style.transform = ''; g_objEl.elBackdrop.style.opacity = ''; return; }
+      // 스와이프한 방향으로 밀어낸 뒤, 아래로 내려가는 기본 닫힘 애니메이션 없이 숨김
+      elSheet.style.transform = `translate3d(${objD.nDx < 0 ? -nW * 1.1 : nW * 1.1}px,0,0)`;
+      g_objEl.elBackdrop.style.opacity = '0';
+      setTimeout(() => { if (g_elOpenSheet === elSheet) CloseSheet(true); else ResetSheetDrag(elSheet); }, 220);
+    };
+    elSheet.addEventListener('pointerup', fnEnd);
+    elSheet.addEventListener('pointercancel', fnEnd);
+    // 스와이프 직후 손을 뗀 위치의 버튼이 눌리지 않도록
+    elSheet.addEventListener('click', (e) => { if (bSuppressClick) { e.stopPropagation(); e.preventDefault(); } }, true);
+  }
+  document.querySelectorAll('.sheet').forEach(BindSheetSwipe);
   g_objEl.elBackdrop.addEventListener('click', CloseSheet);
   document.querySelectorAll('[data-close]').forEach((elBtn) => elBtn.addEventListener('click', CloseSheet));
   document.addEventListener('keydown', (e) => {
