@@ -132,6 +132,7 @@ button.hero-cell:active{transform:scale(.98)}
 .row-main{flex:1;min-width:0}
 .row-name{display:flex;align-items:center;gap:6px;font-size:15px;font-weight:700;letter-spacing:-.02em}
 .row-name .tag{padding:1px 6px;border-radius:6px;background:color-mix(in srgb,var(--plus) 16%,transparent);color:var(--plus);font-size:11px;font-weight:750}
+.row-name .tag.fixed{background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent)}
 .row-name .memo-dot{width:5px;height:5px;border-radius:50%;background:var(--muted)}
 .row-sub{margin-top:1px;font-size:12px;font-weight:550;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .row-amt{flex-shrink:0;font-size:16px;font-weight:800;letter-spacing:-.03em}
@@ -144,6 +145,21 @@ button.hero-cell:active{transform:scale(.98)}
 
 .foot-total{display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding:16px 20px;border-radius:22px;background:var(--surface);box-shadow:var(--shadow)}
 .foot-total span{font-size:13px;font-weight:700;color:var(--muted)}
+.foot-total span small{display:block;font-size:11px;font-weight:600;color:var(--faint)}
+.notice-actions{display:flex;flex-direction:column;gap:6px;margin-left:auto;flex-shrink:0}
+.notice-actions .btn{margin:0}
+
+/* 매월 고정 스위치 */
+.toggle{position:relative;display:flex;align-items:center;gap:12px;margin-bottom:12px;padding:12px 14px;border-radius:14px;background:var(--surface-2);cursor:pointer}
+.toggle-text{flex:1;min-width:0}
+.toggle-text b{display:block;font-size:14px;font-weight:750}
+.toggle-text small{display:block;margin-top:1px;font-size:12px;line-height:1.45;color:var(--muted);word-break:keep-all}
+.toggle input{position:absolute;opacity:0;width:1px;height:1px;pointer-events:none}
+.toggle i{position:relative;flex:0 0 46px;height:28px;border-radius:14px;background:var(--faint);transition:background .2s}
+.toggle i::after{content:'';position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:transform .2s}
+.toggle input:checked + i{background:var(--accent)}
+.toggle input:checked + i::after{transform:translateX(18px)}
+.toggle input:focus-visible + i{outline:2px solid var(--accent);outline-offset:2px}
 .foot-total b{font-size:18px;font-weight:850;letter-spacing:-.03em}
 
 /* 로딩 */
@@ -276,6 +292,11 @@ button.hero-cell:active{transform:scale(.98)}
   <h2 id="itemTitle">항목</h2>
   <label class="field"><span>항목 이름</span><input type="text" id="itName" maxlength="30" autocomplete="off"></label>
   <div class="seg" id="itType"><button type="button" data-type="out">지출</button><button type="button" data-type="in">수입</button></div>
+  <label class="toggle">
+    <span class="toggle-text"><b>매월 고정</b><small>새 달에도 같은 금액이 자동으로 채워져요. 금액은 언제든 바꿀 수 있어요.</small></span>
+    <input type="checkbox" id="itFixed" role="switch">
+    <i aria-hidden="true"></i>
+  </label>
   <div class="field-row" id="itAmounts"></div>
   <p class="sheet-total"><span>합계</span><b class="num" id="itTotal">0원</b></p>
   <label class="field"><span>메모</span><input type="text" id="itMemo" maxlength="100" autocomplete="off" placeholder="선택 사항"></label>
@@ -497,6 +518,7 @@ button.hero-cell:active{transform:scale(.98)}
       name: strName,
       color: g_objColors[objRaw.color] ? objRaw.color : 'gray',
       type: objRaw.type === 'in' ? 'in' : 'out',
+      fixed: objRaw.fixed === true,   // 매월 고정: 새 달을 만들 때 금액을 이어받음 (이전 데이터는 false)
       amounts: objAmounts,
       memo: typeof objRaw.memo === 'string' ? objRaw.memo.trim().slice(0, 100) : '',
     };
@@ -521,29 +543,37 @@ button.hero-cell:active{transform:scale(.98)}
 
   function DefaultMonth(strMk) {
     const objOut = NormalizeMonth(null, strMk);
-    objOut.items = g_arrDefaultItems.map(([strName, strColor], i) => ({ id: `d${Pad(i + 1)}`, name: strName, color: strColor, type: 'out', amounts: EmptyAmounts(objOut.columns), memo: '' }));
+    objOut.items = g_arrDefaultItems.map(([strName, strColor], i) => ({ id: `d${Pad(i + 1)}`, name: strName, color: strColor, type: 'out', fixed: false, amounts: EmptyAmounts(objOut.columns), memo: '' }));
     return objOut;
   }
 
-  /** 다른 달의 구조(항목·열)만 복사하고 금액은 비운 새 달 */
+  /** 다른 달의 구조(항목·열)를 복사한 새 달. 고정 항목은 금액·메모 유지, 나머지는 비움 */
   function StructureFrom(objSrc, strMk) {
     const objOut = Clone(objSrc);
     objOut.month = strMk;
     objOut.salary = 0;
     delete objOut.updatedAt;
-    objOut.items.forEach((objItem) => { objItem.amounts = EmptyAmounts(objOut.columns); objItem.memo = ''; });
+    objOut.items.forEach((objItem) => {
+      if (objItem.fixed) return;
+      objItem.amounts = EmptyAmounts(objOut.columns);
+      objItem.memo = '';
+    });
     return objOut;
   }
+
+  /** 금액이 들어 있는 고정 항목 수 */
+  function CountFixedWithAmount(objMonth) { return objMonth.items.filter((objItem) => objItem.fixed && ItemTotal(objItem) > 0).length; }
 
   function ItemTotal(objItem) { return Object.values(objItem.amounts).reduce((n, v) => n + (Number(v) || 0), 0); }
 
   function Summarize(objMonth) {
-    const objSum = { nOut: 0, nIn: 0, objCols: {} };
+    const objSum = { nOut: 0, nIn: 0, nFixedOut: 0, objCols: {} };
     objMonth.columns.forEach((objCol) => { objSum.objCols[objCol.id] = 0; });
     objMonth.items.forEach((objItem) => {
       const nTotal = ItemTotal(objItem);
       if (objItem.type === 'in') { objSum.nIn += nTotal; return; }
       objSum.nOut += nTotal;
+      if (objItem.fixed) objSum.nFixedOut += nTotal;
       objMonth.columns.forEach((objCol) => { objSum.objCols[objCol.id] += objItem.amounts[objCol.id] || 0; });
     });
     objSum.nBalance = objMonth.salary + objSum.nIn - objSum.nOut;
@@ -1021,7 +1051,12 @@ button.hero-cell:active{transform:scale(.98)}
       arrHtml.push(`<div class="notice" style="color:var(--danger)">${Esc(g_objState.strError)}<button class="btn sm" data-act="retry">다시 시도</button></div>`);
     } else if (!g_objState.bSaved) {
       const strFrom = g_objState.strTemplateFrom;
-      arrHtml.push(`<div class="notice"><span>${strFrom ? `<b>${strFrom.replace('-', '.')}</b> 항목으로 새 달을 준비했어요. 금액을 입력하면 저장돼요.` : '아직 저장된 내용이 없어요. 금액을 입력하면 저장돼요.'}</span>${strFrom ? `<button class="btn sm" data-act="copy">금액도 복사</button>` : ''}</div>`);
+      const nFixed = strFrom ? CountFixedWithAmount(objV) : 0;
+      let strMsg = '아직 저장된 내용이 없어요. 금액을 입력하면 저장돼요.';
+      if (strFrom && nFixed) strMsg = `<b>${strFrom.replace('-', '.')}</b> 항목으로 새 달을 준비했어요. 고정 지출 <b>${nFixed}개</b>는 금액까지 채웠어요. 아무 항목이나 저장하면 함께 저장돼요.`;
+      else if (strFrom) strMsg = `<b>${strFrom.replace('-', '.')}</b> 항목으로 새 달을 준비했어요. 금액을 입력하면 저장돼요.`;
+      const strBtns = strFrom ? `<span class="notice-actions">${nFixed ? '<button class="btn sm primary" data-act="save">이대로 저장</button>' : ''}<button class="btn sm" data-act="copy">${nFixed ? '전체 금액 복사' : '금액도 복사'}</button></span>` : '';
+      arrHtml.push(`<div class="notice"><span>${strMsg}</span>${strBtns}</div>`);
     }
 
     // 같은 색이 연속된 항목끼리 하나의 카드로 묶음
@@ -1040,7 +1075,7 @@ button.hero-cell:active{transform:scale(.98)}
         const strSub = [strParts, Esc(objItem.memo)].filter(Boolean).join(' — ');
         const strAmtCls = nTotal ? (objItem.type === 'in' ? ' plus' : '') : ' zero';
         arrHtml.push(`<button class="row" data-id="${Esc(objItem.id)}">
-          <span class="row-main"><span class="row-name">${Esc(objItem.name)}${objItem.type === 'in' ? '<span class="tag">수입</span>' : ''}</span>${strSub ? `<span class="row-sub num">${strSub}</span>` : ''}</span>
+          <span class="row-main"><span class="row-name">${Esc(objItem.name)}${objItem.fixed ? '<span class="tag fixed">고정</span>' : ''}${objItem.type === 'in' ? '<span class="tag">수입</span>' : ''}</span>${strSub ? `<span class="row-sub num">${strSub}</span>` : ''}</span>
           <span class="row-amt num${strAmtCls}">${nTotal ? (objItem.type === 'in' ? '+' : '') + Won(nTotal) : '—'}</span>
         </button>`);
       });
@@ -1048,7 +1083,7 @@ button.hero-cell:active{transform:scale(.98)}
     });
     arrHtml.push('</div>');
     arrHtml.push(`<button class="add-row" data-act="add"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>항목 추가</button>`);
-    arrHtml.push(`<div class="foot-total"><span>총 지출</span><b class="num">-${Won(objSum.nOut)}원</b></div>`);
+    arrHtml.push(`<div class="foot-total"><span>총 지출${objSum.nFixedOut ? `<small class="num">고정 지출 ${Won(objSum.nFixedOut)}원 포함</small>` : ''}</span><b class="num">-${Won(objSum.nOut)}원</b></div>`);
     g_objEl.elPane.innerHTML = arrHtml.join('');
   }
 
@@ -1096,7 +1131,9 @@ button.hero-cell:active{transform:scale(.98)}
     const objFallback = Clone(g_objState.objView);
     const objLocal = Clone(g_objState.objView);
     fnApply(objLocal);
-    g_objStore.mapMonths.set(strMk, { objData: NormalizeMonth(objLocal, strMk), strSha: (g_objStore.mapMonths.get(strMk) || {}).strSha || null, nFetchedAt: 0 });
+    // nFetchedAt을 현재 시각으로 두어, 커밋이 끝나기 전 다른 달 이동·복귀 시 원격의 이전 값으로 덮어쓰지 않게 함
+    g_objStore.mapMonths.set(strMk, { objData: NormalizeMonth(objLocal, strMk), strSha: (g_objStore.mapMonths.get(strMk) || {}).strSha || null, nFetchedAt: Date.now() });
+    g_objStore.setFresh.add(strMk);
     if (g_objState.strMonth === strMk) RenderPane();
     return MutateMonth(strMk, fnApply, `가계부 ${strMk} · ${strMessage}`, objFallback).then(() => {
       if (g_objState.strMonth === strMk) RenderPane();
@@ -1135,13 +1172,48 @@ button.hero-cell:active{transform:scale(.98)}
     if (e.key === 'ArrowRight') GoMonth(1);
   });
 
+  /**
+   * 금액 입력칸: 천 단위 쉼표 표시.
+   * 모바일 키보드(삼성 키보드·한글 키보드 등)는 숫자도 '조합 중' 상태로 넣는 경우가 있어,
+   * 조합 중에 value를 바꾸면 키보드가 들고 있던 이전 숫자가 다시 붙음 → 조합이 끝난 뒤에만 서식 적용.
+   */
+  function FormatMoneyInput(elInput) {
+    const strOld = elInput.value;
+    const n = ParseInput(strOld);
+    const strNew = n ? Won(n) : '';
+    if (strNew === strOld) return;
+    const bFocused = document.activeElement === elInput;
+    // 커서 오른쪽에 있던 숫자 개수를 유지해 커서 위치 보존
+    const nSelEnd = bFocused && typeof elInput.selectionEnd === 'number' ? elInput.selectionEnd : strOld.length;
+    const nDigitsRight = strOld.slice(nSelEnd).replace(/[^\d]/g, '').length;
+    elInput.value = strNew;
+    if (!bFocused) return;
+    let nPos = strNew.length;
+    for (let nSeen = 0; nPos > 0 && nSeen < nDigitsRight; nPos--) { if (/\d/.test(strNew[nPos - 1])) nSeen++; }
+    try { elInput.setSelectionRange(nPos, nPos); } catch { /* 일부 브라우저 미지원 */ }
+  }
+
   function BindMoneyInput(elInput, fnOnChange) {
-    elInput.addEventListener('input', () => {
-      const n = ParseInput(elInput.value);
-      elInput.value = n ? Won(n) : '';
-      if (fnOnChange) fnOnChange();
+    let bComposing = false;
+    const fnNotify = () => { if (fnOnChange) fnOnChange(); };
+    elInput.addEventListener('compositionstart', () => { bComposing = true; });
+    elInput.addEventListener('compositionend', () => { bComposing = false; FormatMoneyInput(elInput); fnNotify(); });
+    elInput.addEventListener('input', (e) => {
+      if (!bComposing && !e.isComposing) FormatMoneyInput(elInput);
+      fnNotify();
     });
-    elInput.addEventListener('focus', () => setTimeout(() => elInput.select(), 0));
+    elInput.addEventListener('blur', () => { bComposing = false; FormatMoneyInput(elInput); fnNotify(); });
+    // 포커스 시 기존 금액 전체 선택. 그사이 이미 입력이 시작됐으면 선택하지 않음(첫 글자 덮어쓰기 방지)
+    elInput.addEventListener('focus', () => {
+      const strAtFocus = elInput.value;
+      setTimeout(() => { if (document.activeElement === elInput && elInput.value === strAtFocus && strAtFocus) elInput.select(); }, 0);
+    });
+  }
+
+  /** 시트를 다시 채우기 전에 포커스·키보드 조합 상태를 끊음 */
+  function ReleaseFocusIn(elSheet) {
+    const elActive = document.activeElement;
+    if (elActive && elSheet.contains(elActive) && typeof elActive.blur === 'function') elActive.blur();
   }
 
   /* ================= 항목 시트 ================= */
@@ -1163,14 +1235,17 @@ button.hero-cell:active{transform:scale(.98)}
     const objV = g_objState.objView;
     const objItem = strId ? objV.items.find((x) => x.id === strId) : null;
     if (strId && !objItem) return;
+    ReleaseFocusIn(g_objItemSheet.elSheet);
     g_objItemSheet.strId = strId || '';
     g_objItemSheet.strType = objItem ? objItem.type : 'out';
+    Q('#itFixed').checked = !!(objItem && objItem.fixed);
     const objLast = objV.items[objV.items.length - 1];
     g_objItemSheet.strColor = objItem ? objItem.color : (objLast ? objLast.color : 'gray');
     Q('#itemTitle').textContent = objItem ? objItem.name : '새 항목';
     Q('#itName').value = objItem ? objItem.name : '';
     Q('#itMemo').value = objItem ? objItem.memo : '';
     const elWrap = Q('#itAmounts');
+    elWrap.textContent = '';
     elWrap.innerHTML = objV.columns.map((objCol) => `<label class="field money"><span>${Esc(objCol.name)}</span><input type="text" inputmode="numeric" autocomplete="off" data-col="${objCol.id}" value="${objItem && objItem.amounts[objCol.id] ? Won(objItem.amounts[objCol.id]) : ''}" placeholder="0"></label>`).join('');
     g_objItemSheet.arrInputs = [...elWrap.querySelectorAll('input')];
     g_objItemSheet.arrInputs.forEach((elIn) => BindMoneyInput(elIn, SyncItemSheetUi));
@@ -1191,16 +1266,17 @@ button.hero-cell:active{transform:scale(.98)}
     if (!strName) { Toast('항목 이름을 입력해 주세요'); Q('#itName').focus(); return; }
     const objAmounts = {};
     g_objItemSheet.arrInputs.forEach((elIn) => { objAmounts[elIn.dataset.col] = ParseInput(elIn.value); });
-    const objPatch = { name: strName, type: g_objItemSheet.strType, color: g_objItemSheet.strColor, amounts: objAmounts, memo: Q('#itMemo').value.trim().slice(0, 100) };
+    const objPatch = { name: strName, type: g_objItemSheet.strType, color: g_objItemSheet.strColor, fixed: Q('#itFixed').checked, amounts: objAmounts, memo: Q('#itMemo').value.trim().slice(0, 100) };
     const strId = g_objItemSheet.strId;
     CloseSheet();
     if (strId) {
       const objOld = g_objState.objView.items.find((x) => x.id === strId);
       if (objOld && JSON.stringify({ ...objOld, ...objPatch }) === JSON.stringify(objOld) && g_objState.bSaved) return;
-      Commit((objD) => { const objIt = objD.items.find((x) => x.id === strId); if (objIt) Object.assign(objIt, objPatch); else objD.items.push({ id: strId, ...objPatch }); }, `${strName} 수정 (${Won(ItemTotal(objPatch))}원)`);
+      // fnApply는 낙관적 반영과 원격 커밋에서 두 번 호출되므로 매번 사본을 넣음
+      Commit((objD) => { const objIt = objD.items.find((x) => x.id === strId); if (objIt) Object.assign(objIt, Clone(objPatch)); else objD.items.push({ id: strId, ...Clone(objPatch) }); }, `${strName} 수정 (${Won(ItemTotal(objPatch))}원${objPatch.fixed ? ', 고정' : ''})`);
     } else {
       const strNewId = NewId();
-      Commit((objD) => { objD.items.push({ id: strNewId, ...objPatch }); }, `${strName} 추가`);
+      Commit((objD) => { objD.items.push({ id: strNewId, ...Clone(objPatch) }); }, `${strName} 추가`);
     }
   });
 
@@ -1225,6 +1301,7 @@ button.hero-cell:active{transform:scale(.98)}
   /* ================= 급여 시트 ================= */
   BindMoneyInput(Q('#slAmount'));
   function OpenSalary() {
+    ReleaseFocusIn(Q('#salarySheet'));
     Q('#slAmount').value = g_objState.objView.salary ? Won(g_objState.objView.salary) : '';
     OpenSheet(Q('#salarySheet'));
     setTimeout(() => Q('#slAmount').focus(), 320);
@@ -1551,6 +1628,7 @@ button.hero-cell:active{transform:scale(.98)}
     if (strAct === 'salary') OpenSalary();
     else if (strAct === 'add') OpenItem('');
     else if (strAct === 'copy') CopyFromTemplate();
+    else if (strAct === 'save') Commit(() => { /* 화면에 준비된 내용(고정 지출 포함)을 그대로 저장 */ }, '고정 지출로 새 달 저장');
     else if (strAct === 'retry') Load(true);
   });
   Q('#btnSettings').addEventListener('click', OpenSettings);
